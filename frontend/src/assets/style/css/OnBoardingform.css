@@ -1,0 +1,1138 @@
+/* ============================================================
+   OnboardingForm.css — Dashboard RT-003
+   Design: Geometric / Structured — berbeda dari Login (organic)
+   Font: DM Serif Display + DM Sans (inherited from design system)
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap");
+
+/* ── Design Tokens (sama dengan Login) ── */
+:root {
+  --clr-primary: #4a8c5c;
+  --clr-primary-dark: #2d6644;
+  --clr-primary-mid: #5a9e6e;
+  --clr-primary-light: #8ec4a0;
+  --clr-primary-pale: #d4eddc;
+  --clr-primary-tint: #eaf5ee;
+
+  --clr-bg-from: #c8e6d4;
+  --clr-bg-mid: #ddf0e4;
+  --clr-bg-to: #e8f0d8;
+
+  --clr-card-bg: #ffffff;
+  --clr-card-shadow: rgba(60, 110, 80, 0.12);
+  --clr-input-bg: #f7fbf8;
+  --clr-input-border: #cce8d8;
+  --clr-input-focus: #4a8c5c;
+
+  --clr-title: #1a3a26;
+  --clr-subtitle: #6b9278;
+  --clr-body: #2e4a38;
+  --clr-muted: #8aaa94;
+
+  --clr-btn-bg: #5a9e6e;
+  --clr-btn-bg-hover: #4a8c5c;
+  --clr-btn-disabled: #a8ccb5;
+
+  --clr-error-bg: #fffbeb;
+  --clr-error-border: #fcd34d;
+  --clr-error-text: #92400e;
+
+  /* Onboarding-specific */
+  --obf-step-done: #4a8c5c;
+  --obf-step-active: #5a9e6e;
+  --obf-step-pending: #d4eddc;
+  --obf-step-connector: #cce8d8;
+  --obf-radius-card: 24px;
+  --obf-radius-input: 12px;
+  --obf-radius-btn: 40px;
+}
+
+/* ── Reset & Base ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Wrapper ── */
+.obf-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(
+    135deg,
+    var(--clr-bg-from) 0%,
+    var(--clr-bg-mid) 50%,
+    var(--clr-bg-to) 100%
+  );
+  font-family: "DM Sans", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Geometric Background ── */
+.obf-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.obf-bg__shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.18;
+}
+
+.obf-bg__shape--1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(
+    circle,
+    var(--clr-primary-mid) 0%,
+    transparent 70%
+  );
+  top: -200px;
+  right: -150px;
+  animation: obf-drift1 18s ease-in-out infinite alternate;
+}
+
+.obf-bg__shape--2 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(
+    circle,
+    var(--clr-primary-light) 0%,
+    transparent 70%
+  );
+  bottom: -120px;
+  left: -100px;
+  animation: obf-drift2 14s ease-in-out infinite alternate;
+}
+
+.obf-bg__shape--3 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--clr-primary) 0%, transparent 70%);
+  top: 45%;
+  left: 55%;
+  opacity: 0.09;
+  animation: obf-drift3 20s ease-in-out infinite alternate;
+}
+
+/* Dot grid pattern */
+.obf-bg__dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle,
+    rgba(74, 140, 92, 0.15) 1px,
+    transparent 1px
+  );
+  background-size: 32px 32px;
+}
+
+@keyframes obf-drift1 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-40px, 40px) scale(1.1);
+  }
+}
+@keyframes obf-drift2 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(30px, -30px) scale(1.08);
+  }
+}
+@keyframes obf-drift3 {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate(-20px, 20px) rotate(45deg);
+  }
+}
+
+/* ── Card ── */
+.obf-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  background: var(--clr-card-bg);
+  border-radius: var(--obf-radius-card);
+  padding: 36px 40px 28px;
+  box-shadow:
+    0 4px 6px -1px rgba(60, 110, 80, 0.08),
+    0 20px 60px -12px rgba(60, 110, 80, 0.22),
+    0 0 0 1px rgba(74, 140, 92, 0.06);
+  animation: obf-card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.obf-card--success {
+  max-width: 460px;
+}
+
+@keyframes obf-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Header ── */
+.obf-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.obf-header__logo {
+  flex-shrink: 0;
+}
+
+.obf-header__logo svg {
+  width: 44px;
+  height: 44px;
+  display: block;
+  filter: drop-shadow(0 4px 8px rgba(74, 140, 92, 0.35));
+}
+
+.obf-header__title {
+  font-family: "DM Serif Display", serif;
+  font-size: 1.5rem;
+  color: var(--clr-title);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.obf-header__sub {
+  font-size: 0.78rem;
+  color: var(--clr-muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ── Step Indicator ── */
+.obf-steps {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.obf-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.obf-step__bubble {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--obf-step-connector);
+  background: var(--obf-step-pending);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.obf-step--done .obf-step__bubble {
+  background: var(--obf-step-done);
+  border-color: var(--obf-step-done);
+  color: white;
+}
+
+.obf-step--done .obf-step__bubble svg {
+  width: 16px;
+  height: 16px;
+  stroke: white;
+}
+
+.obf-step--active .obf-step__bubble {
+  background: white;
+  border-color: var(--obf-step-active);
+  border-width: 2.5px;
+  box-shadow: 0 0 0 4px rgba(90, 158, 110, 0.15);
+}
+
+.obf-step__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.obf-step__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.obf-step__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--clr-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color 0.25s;
+}
+
+.obf-step--active .obf-step__label {
+  color: var(--clr-primary);
+}
+
+.obf-step--done .obf-step__label {
+  color: var(--clr-primary-dark);
+}
+
+.obf-step__desc {
+  font-size: 0.62rem;
+  color: var(--clr-muted);
+  margin-top: 1px;
+}
+
+/* Connector line between steps */
+.obf-step__connector {
+  position: absolute;
+  top: 18px;
+  left: calc(50% + 19px);
+  right: calc(-50% + 19px);
+  height: 2px;
+  background: var(--obf-step-connector);
+  z-index: 0;
+  transition: background 0.4s ease;
+}
+
+.obf-step__connector--done {
+  background: var(--obf-step-done);
+}
+
+/* ── Progress Bar ── */
+.obf-progress {
+  height: 3px;
+  background: var(--clr-primary-pale);
+  border-radius: 999px;
+  margin: 20px 0 24px;
+  overflow: hidden;
+}
+
+.obf-progress__bar {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--clr-primary-mid),
+    var(--clr-primary-dark)
+  );
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ── Form Content ── */
+.obf-content {
+  animation: obf-step-in 0.3s ease both;
+}
+
+@keyframes obf-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.obf-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.obf-step-header {
+  margin-bottom: 4px;
+}
+
+.obf-step-title {
+  font-family: "DM Serif Display", serif;
+  font-size: 1.2rem;
+  color: var(--clr-title);
+  margin-bottom: 4px;
+}
+
+.obf-step-subtitle {
+  font-size: 0.82rem;
+  color: var(--clr-muted);
+}
+
+/* ── Fields ── */
+.obf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.obf-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.obf-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--clr-body);
+  letter-spacing: 0.01em;
+}
+
+.obf-required {
+  color: var(--clr-primary);
+  margin-left: 2px;
+}
+
+/* ── Input ── */
+.obf-input,
+.obf-textarea,
+.obf-select {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1.5px solid var(--clr-input-border);
+  border-radius: var(--obf-radius-input);
+  background: var(--clr-input-bg);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.9rem;
+  color: var(--clr-body);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background 0.2s;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.obf-input::placeholder,
+.obf-textarea::placeholder {
+  color: var(--clr-muted);
+}
+
+.obf-input:focus,
+.obf-textarea:focus,
+.obf-select:focus {
+  border-color: var(--clr-input-focus);
+  background: white;
+  box-shadow: 0 0 0 3.5px rgba(74, 140, 92, 0.14);
+}
+
+.obf-input--error {
+  border-color: #f87171 !important;
+  background: #fff8f8;
+}
+
+.obf-textarea {
+  resize: vertical;
+  min-height: 88px;
+  line-height: 1.5;
+}
+
+/* ── Phone Prefix Input ── */
+.obf-input-prefix-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--clr-input-border);
+  border-radius: var(--obf-radius-input);
+  overflow: hidden;
+  background: var(--clr-input-bg);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.obf-input-prefix-wrap:focus-within {
+  border-color: var(--clr-input-focus);
+  box-shadow: 0 0 0 3.5px rgba(74, 140, 92, 0.14);
+}
+
+.obf-input-prefix {
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  background: var(--clr-primary-tint);
+  border-right: 1.5px solid var(--clr-input-border);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--clr-primary-dark);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.obf-input--prefixed {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  flex: 1;
+}
+
+/* ── Select ── */
+.obf-select-wrap {
+  position: relative;
+}
+
+.obf-select {
+  cursor: pointer;
+  padding-right: 40px;
+}
+
+.obf-select option {
+  background: white;
+  color: var(--clr-body);
+}
+
+.obf-select-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  stroke: var(--clr-muted);
+  pointer-events: none;
+}
+
+/* ── Field Error ── */
+.obf-field-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: obf-err-in 0.2s ease both;
+}
+
+.obf-field-error--standalone {
+  margin-top: 8px;
+}
+
+@keyframes obf-err-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Info Box ── */
+.obf-info-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--clr-primary-tint);
+  border: 1px solid var(--clr-primary-pale);
+  border-radius: 12px;
+}
+
+.obf-info-box svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--clr-primary);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.obf-info-box p {
+  font-size: 0.78rem;
+  color: var(--clr-primary-dark);
+  line-height: 1.5;
+}
+
+.obf-info-box--yellow {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.obf-info-box--yellow svg {
+  stroke: #d97706;
+}
+
+.obf-info-box--yellow p {
+  color: #92400e;
+}
+
+/* ── Dropzone ── */
+.obf-dropzone {
+  border: 2px dashed var(--clr-input-border);
+  border-radius: 16px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  background: var(--clr-input-bg);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.15s;
+}
+
+.obf-dropzone:hover {
+  border-color: var(--clr-primary-light);
+  background: var(--clr-primary-tint);
+}
+
+.obf-dropzone--active {
+  border-color: var(--clr-primary);
+  background: var(--clr-primary-tint);
+  transform: scale(1.01);
+}
+
+.obf-dropzone--error {
+  border-color: #f87171;
+}
+
+.obf-dropzone__icon {
+  width: 52px;
+  height: 52px;
+  background: var(--clr-primary-pale);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.obf-dropzone__icon svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--clr-primary);
+}
+
+.obf-dropzone__primary {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--clr-body);
+}
+
+.obf-dropzone__secondary {
+  font-size: 0.78rem;
+  color: var(--clr-muted);
+}
+
+.obf-dropzone__hint {
+  font-size: 0.72rem;
+  color: var(--clr-muted);
+  margin-top: 4px;
+}
+
+.obf-dropzone__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.obf-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 40px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.obf-upload-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.obf-upload-btn--gallery {
+  background: var(--clr-primary-pale);
+  color: var(--clr-primary-dark);
+}
+
+.obf-upload-btn--gallery:hover {
+  background: var(--clr-primary-light);
+  color: white;
+}
+
+.obf-upload-btn--camera {
+  background: var(--clr-primary);
+  color: white;
+}
+
+.obf-upload-btn--camera:hover {
+  background: var(--clr-primary-dark);
+}
+
+/* ── KTP Preview ── */
+.obf-ktp-preview {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1.5px solid var(--clr-input-border);
+  animation: obf-card-in 0.3s ease both;
+}
+
+.obf-ktp-img {
+  width: 100%;
+  display: block;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.obf-ktp-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--clr-input-bg);
+  border-top: 1px solid var(--clr-input-border);
+}
+
+.obf-ktp-meta__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.obf-ktp-meta__info svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--clr-primary);
+  background: var(--clr-primary-pale);
+  padding: 5px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.obf-ktp-meta__name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--clr-body);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.obf-ktp-meta__size {
+  font-size: 0.7rem;
+  color: var(--clr-muted);
+}
+
+.obf-ktp-remove {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--clr-primary);
+  background: none;
+  border: 1px solid var(--clr-primary-light);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.obf-ktp-remove:hover {
+  background: var(--clr-primary-tint);
+}
+
+/* ── Tips ── */
+.obf-tips {
+  background: var(--clr-input-bg);
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--clr-input-border);
+}
+
+.obf-tips__title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--clr-subtitle);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.obf-tips__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.obf-tips__list li {
+  font-size: 0.77rem;
+  color: var(--clr-muted);
+  padding-left: 14px;
+  position: relative;
+}
+
+.obf-tips__list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--clr-primary-light);
+  font-weight: bold;
+}
+
+/* ── Review / Konfirmasi ── */
+.obf-review-card {
+  border: 1.5px solid var(--clr-input-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.obf-review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--clr-input-border);
+}
+
+.obf-review-row:last-child {
+  border-bottom: none;
+}
+
+.obf-review-row:nth-child(odd) {
+  background: var(--clr-primary-tint);
+}
+
+.obf-review-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--clr-muted);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 110px;
+}
+
+.obf-review-value {
+  font-size: 0.84rem;
+  color: var(--clr-body);
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+}
+
+.obf-review-row--ktp {
+  align-items: flex-start;
+}
+
+.obf-review-ktp-thumb {
+  width: 100px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--clr-input-border);
+}
+
+/* ── Submit Error ── */
+.obf-submit-error {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  background: var(--clr-error-bg);
+  border: 1px solid var(--clr-error-border);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--clr-error-text);
+  margin-top: 16px;
+}
+
+.obf-submit-error svg {
+  width: 17px;
+  height: 17px;
+  stroke: #d97706;
+  flex-shrink: 0;
+}
+
+/* ── Navigation Buttons ── */
+.obf-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.obf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-radius: var(--obf-radius-btn);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.obf-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.obf-btn--full {
+  width: 100%;
+}
+
+.obf-btn--primary {
+  background: var(--clr-btn-bg);
+  color: white;
+  box-shadow: 0 4px 14px rgba(74, 140, 92, 0.3);
+  flex: 1;
+}
+
+.obf-btn--primary:hover:not(:disabled) {
+  background: var(--clr-btn-bg-hover);
+  box-shadow: 0 6px 20px rgba(74, 140, 92, 0.4);
+  transform: translateY(-1px);
+}
+
+.obf-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(74, 140, 92, 0.25);
+}
+
+.obf-btn--primary:disabled {
+  background: var(--clr-btn-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.obf-btn--ghost {
+  background: transparent;
+  color: var(--clr-subtitle);
+  border: 1.5px solid var(--clr-input-border);
+  flex-shrink: 0;
+}
+
+.obf-btn--ghost:hover:not(:disabled) {
+  background: var(--clr-primary-tint);
+  border-color: var(--clr-primary-light);
+  color: var(--clr-primary);
+}
+
+/* ── Spinner ── */
+.obf-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: obf-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes obf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Step Counter ── */
+.obf-counter {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--clr-muted);
+  margin-top: 14px;
+}
+
+/* ── Hidden Input ── */
+.obf-hidden-input {
+  display: none;
+}
+
+/* ── Success Screen ── */
+.obf-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0;
+  gap: 0;
+}
+
+.obf-success__anim {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  margin-bottom: 24px;
+}
+
+.obf-success__ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.obf-success__ring-bg {
+  fill: none;
+  stroke: var(--clr-primary-pale);
+  stroke-width: 8;
+}
+
+.obf-success__ring-fill {
+  fill: none;
+  stroke: var(--clr-primary);
+  stroke-width: 8;
+  stroke-dasharray: 276.5;
+  stroke-dashoffset: 276.5;
+  stroke-linecap: round;
+  animation: obf-ring 0.8s 0.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes obf-ring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.obf-success__check {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  stroke: var(--clr-primary);
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: obf-check 0.4s 0.9s ease forwards;
+}
+
+@keyframes obf-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.obf-success__title {
+  font-family: "DM Serif Display", serif;
+  font-size: 1.6rem;
+  color: var(--clr-title);
+  margin-bottom: 12px;
+}
+
+.obf-success__body {
+  font-size: 0.88rem;
+  color: var(--clr-subtitle);
+  line-height: 1.65;
+  margin-bottom: 28px;
+  max-width: 320px;
+}
+
+.obf-success__body strong {
+  color: var(--clr-primary-dark);
+  font-weight: 700;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .obf-card {
+    padding: 24px 20px 20px;
+    border-radius: 20px;
+  }
+
+  .obf-step__desc {
+    display: none;
+  }
+
+  .obf-step__bubble {
+    width: 32px;
+    height: 32px;
+  }
+
+  .obf-step__icon {
+    font-size: 0.85rem;
+  }
+
+  .obf-step__connector {
+    top: 15px;
+  }
+
+  .obf-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .obf-header__title {
+    font-size: 1.25rem;
+  }
+
+  .obf-btn {
+    padding: 11px 20px;
+    font-size: 0.85rem;
+  }
+
+  .obf-dropzone__actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .obf-upload-btn {
+    justify-content: center;
+  }
+
+  .obf-review-label {
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 380px) {
+  .obf-steps {
+    gap: 0;
+  }
+
+  .obf-step__label {
+    font-size: 0.6rem;
+  }
+
+  .obf-step__bubble {
+    width: 28px;
+    height: 28px;
+  }
+}

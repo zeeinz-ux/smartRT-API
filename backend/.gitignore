@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Build Output
+build/
+dist/
+
+# AdonisJS
+.adonisjs/
+tmp/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+
+# Cache
+.cache/
+.eslintcache
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+# Database
+*.sqlite
+*.sqlite3
+
+# Misc
+.env.*
+!.env.example
+
+# Google Service Account
+config/google-service-account.json
+
+# Firebase Credentials
+firebase-adminsdk*.json
+service-account*.json
+
+# Secrets & Keys
+*.pem
+*.key
+*.p12
+*.crt

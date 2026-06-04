@@ -1,0 +1,65 @@
+/* Footer.css — selaras dengan Login.css (Dashboard RT-003) */
+/* Mengadopsi token desain natural hijau */
+
+:root {
+  /* Token disamakan dengan Login.css */
+  --clr-primary: #4a8c5c;
+  --clr-primary-light: #8ec4a0;
+  --clr-primary-pale: #d4eddc;
+  --clr-card-bg: #ffffff;
+  --clr-text: #2e4a38;
+  --clr-muted: #8aaa94;
+  --clr-border: #cce8d8;
+  --clr-green: #16a34a;
+  --radius-sm: 8px;
+  --font-body: "DM Sans", system-ui, sans-serif;
+}
+
+.footer-small {
+  width: 100%;
+  border-top: 1px solid var(--clr-border);
+  background: var(--clr-prmary);
+  padding: 12px 20px;
+  font-family: var(--font-body);
+}
+
+.footer-small-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--clr-muted);
+}
+
+.footer-small-container p {
+  margin: 0;
+  color: var(--clr-text);
+}
+
+.footer-small-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--clr-green);
+  font-weight: 500;
+}
+
+.footer-small-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--clr-green);
+  display: inline-block;
+}
+
+@media (max-width: 640px) {
+  .footer-small-container {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+}

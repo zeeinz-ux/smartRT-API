@@ -1,0 +1,575 @@
+/* Login.css — Dashboard RT-003 */
+/* Design language: Organic/Natural — soft greens, rounded forms, floating leaves */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap");
+
+/* ─────────────────────────────────────────
+   Design Tokens
+───────────────────────────────────────── */
+:root {
+  /* Primary green palette */
+  --clr-primary: #4a8c5c;
+  --clr-primary-dark: #2d6644;
+  --clr-primary-mid: #5a9e6e;
+  --clr-primary-light: #8ec4a0;
+  --clr-primary-pale: #d4eddc;
+  --clr-primary-tint: #eaf5ee;
+
+  /* Background gradient (mint-to-sand) */
+  --clr-bg-from: #c8e6d4;
+  --clr-bg-mid: #ddf0e4;
+  --clr-bg-to: #e8f0d8;
+
+  /* Card */
+  --clr-card-bg: #ffffff;
+  --clr-card-shadow: rgba(60, 110, 80, 0.12);
+
+  /* Topbar accent */
+  --clr-topbar-from: #5a9e6e;
+  --clr-topbar-to: #3d7a55;
+
+  /* Input */
+  --clr-input-bg: #f7fbf8;
+  --clr-input-border: #cce8d8;
+  --clr-input-focus: #4a8c5c;
+  --clr-input-text: #1f2e26;
+  --clr-placeholder: #9abfaa;
+
+  /* Text */
+  --clr-title: #1a3a26;
+  --clr-subtitle: #6b9278;
+  --clr-body: #2e4a38;
+  --clr-muted: #8aaa94;
+  --clr-link: #4a8c5c;
+
+  /* Error */
+  --clr-error-bg: #fffbeb;
+  --clr-error-border: #fcd34d;
+  --clr-error-text: #92400e;
+
+  /* Button primary */
+  --clr-btn-bg: #5a9e6e;
+  --clr-btn-bg-hover: #4a8c5c;
+  --clr-btn-bg-active: #3d7a55;
+  --clr-btn-text: #ffffff;
+  --clr-btn-disabled: #a8ccb5;
+
+  /* Button Google */
+  --clr-google-bg: #f7fbf8;
+  --clr-google-border: #cce8d8;
+  --clr-google-hover: #eaf5ee;
+  --clr-google-text: #1f2e26;
+
+  /* Leaf */
+  --clr-leaf: rgba(74, 140, 92, 0.35);
+
+  /* Spacing & Radii */
+  --radius-card: 20px;
+  --radius-input: 40px;
+  --radius-btn: 40px;
+  --radius-sm: 8px;
+
+  /* Typography */
+  --font-display: "DM Serif Display", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+}
+
+/* ─────────────────────────────────────────
+   Reset
+───────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─────────────────────────────────────────
+   Page
+───────────────────────────────────────── */
+.ms-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--clr-bg-from) 0%,
+    var(--clr-bg-mid) 50%,
+    var(--clr-bg-to) 100%
+  );
+  padding: 1.5rem;
+  font-family: var(--font-body);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────
+   Floating Leaves
+───────────────────────────────────────── */
+.ms-leaf {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50% 10% 50% 10%;
+  background: var(--clr-leaf);
+  animation: leafFloat linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes leafFloat {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translateY(-14px) rotate(8deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-6px) rotate(-5deg);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translateY(-18px) rotate(12deg);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.6;
+  }
+}
+
+/* ─────────────────────────────────────────
+   Card
+───────────────────────────────────────── */
+.ms-card {
+  position: relative;
+  background: var(--clr-card-bg);
+  border-radius: var(--radius-card);
+  box-shadow:
+    0 4px 6px var(--clr-card-shadow),
+    0 20px 60px rgba(60, 110, 80, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  padding: 2.5rem 2.25rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Top Accent Bar
+───────────────────────────────────────── */
+.ms-card-topbar {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52%;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--clr-topbar-from),
+    var(--clr-topbar-to)
+  );
+  border-radius: 0 0 4px 4px;
+}
+
+/* ─────────────────────────────────────────
+   Logo
+───────────────────────────────────────── */
+.ms-logo {
+  margin-bottom: 1.1rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeUp 0.5s 0.1s both;
+}
+
+/* ─────────────────────────────────────────
+   Heading
+───────────────────────────────────────── */
+.ms-title {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 400;
+  color: var(--clr-title);
+  text-align: center;
+  margin-bottom: 0.3rem;
+  animation: fadeUp 0.5s 0.15s both;
+}
+
+.ms-subtitle {
+  font-size: 13.5px;
+  color: var(--clr-subtitle);
+  text-align: center;
+  margin-bottom: 1.6rem;
+  animation: fadeUp 0.5s 0.2s both;
+  font-weight: 400;
+}
+
+/* ─────────────────────────────────────────
+   Error Box
+───────────────────────────────────────── */
+.ms-error {
+  width: 100%;
+  background: var(--clr-error-bg);
+  border: 0.5px solid var(--clr-error-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--clr-error-text);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.55;
+  animation: fadeUp 0.3s both;
+}
+
+/* ─────────────────────────────────────────
+   Form
+───────────────────────────────────────── */
+.ms-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: fadeUp 0.5s 0.25s both;
+}
+
+/* ─────────────────────────────────────────
+   Input Field
+───────────────────────────────────────── */
+.ms-field {
+  position: relative;
+  width: 100%;
+}
+
+.ms-input {
+  width: 100%;
+  padding: 13px 42px 13px 18px;
+  border-radius: var(--radius-input);
+  border: 1.5px solid var(--clr-input-border);
+  background: var(--clr-input-bg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--clr-input-text);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background 0.2s;
+}
+
+.ms-input::placeholder {
+  color: var(--clr-placeholder);
+}
+
+.ms-input:focus {
+  border-color: var(--clr-input-focus);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(74, 140, 92, 0.1);
+}
+
+/* Samakan posisi dasar untuk semua icon field */
+.ms-field-icon,
+.ms-field-icon--btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hilangkan padding berlebih pada button agar align dengan span */
+.ms-field-icon--btn {
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  width: auto;
+  height: auto;
+}
+
+.ms-field-icon--btn:hover {
+  background: var(--clr-primary-tint);
+}
+
+/* ─────────────────────────────────────────
+   Row (checkbox + link)
+───────────────────────────────────────── */
+.ms-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.1rem;
+  margin-bottom: 0.2rem;
+}
+
+.ms-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--clr-body);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ms-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 40px;
+  border: 1.5px solid var(--clr-input-border);
+  background: var(--clr-input-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  cursor: pointer;
+}
+
+.ms-checkbox:focus {
+  outline: 2px solid var(--clr-primary-pale);
+  outline-offset: 2px;
+}
+
+.ms-checkbox--checked {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+}
+
+.ms-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-link);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.ms-link:hover {
+  color: var(--clr-primary-dark);
+  text-decoration: underline;
+}
+
+/* ─────────────────────────────────────────
+   Primary Button
+───────────────────────────────────────── */
+.ms-btn-primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-btn);
+  border: none;
+  background: var(--clr-btn-bg);
+  color: var(--clr-btn-text);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s,
+    box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(74, 140, 92, 0.25);
+  margin-top: 0.25rem;
+}
+
+.ms-btn-primary:hover:not(:disabled) {
+  background: var(--clr-btn-bg-hover);
+  box-shadow: 0 6px 20px rgba(74, 140, 92, 0.35);
+  transform: translateY(-1px);
+}
+
+.ms-btn-primary:active:not(:disabled) {
+  background: var(--clr-btn-bg-active);
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(74, 140, 92, 0.2);
+}
+
+.ms-btn-primary:disabled {
+  background: var(--clr-btn-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ─────────────────────────────────────────
+   Divider
+───────────────────────────────────────── */
+.ms-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 1.25rem 0 1rem;
+}
+
+.ms-divider-line {
+  flex: 1;
+  height: 0.5px;
+  background: var(--clr-primary-pale);
+}
+
+.ms-divider-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────
+   Google Button
+───────────────────────────────────────── */
+.ms-btn-google {
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: var(--radius-btn);
+  border: 1.5px solid var(--clr-google-border);
+  background: var(--clr-google-bg);
+  color: var(--clr-google-text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.15s;
+  box-shadow: 0 1px 4px rgba(60, 110, 80, 0.06);
+  animation: fadeUp 0.5s 0.3s both;
+}
+
+.ms-btn-google:hover:not(:disabled) {
+  background: var(--clr-google-hover);
+  border-color: var(--clr-primary-light);
+  box-shadow: 0 3px 12px rgba(60, 110, 80, 0.1);
+  transform: translateY(-1px);
+}
+
+.ms-btn-google:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.ms-btn-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────
+   Spinner
+───────────────────────────────────────── */
+.ms-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+.ms-spinner--dark {
+  border-color: var(--clr-primary-pale);
+  border-top-color: var(--clr-primary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Footer
+───────────────────────────────────────── */
+.ms-footer {
+  margin-top: 1.35rem;
+  font-size: 13px;
+  color: var(--clr-muted);
+  text-align: center;
+  animation: fadeUp 0.5s 0.35s both;
+}
+
+.ms-footer-link {
+  font-weight: 600;
+  color: var(--clr-link);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.ms-footer-link:hover {
+  color: var(--clr-primary-dark);
+  text-decoration: underline;
+}
+
+.ms-footer-link[type="button"] {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+
+/* ─────────────────────────────────────────
+   Shared Animations
+───────────────────────────────────────── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+───────────────────────────────────────── */
+@media (max-width: 480px) {
+  .ms-card {
+    padding: 2rem 1.5rem 1.75rem;
+    border-radius: 16px;
+  }
+
+  .ms-title {
+    font-size: 1.45rem;
+  }
+}
