@@ -1,7 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http'
 import cuid from 'cuid'
-import User from '#models/user'
 import WargaProfile from '#models/warga_profile'
+import { validateNIK, validateKK } from '#utils/kependudukan'
 
 export default class WargaController {
   /**
@@ -65,6 +65,13 @@ export default class WargaController {
         })
       }
 
+      if (cleanNik === cleanKk) {
+        return response.status(400).json({
+          success: false,
+          message: 'NIK dan Nomor KK tidak boleh sama',
+        })
+      }
+
       if (!/^\d{16}$/.test(cleanNik)) {
         return response.status(400).json({
           success: false,
@@ -72,10 +79,26 @@ export default class WargaController {
         })
       }
 
+      const nikResult = validateNIK(cleanNik)
+      if (!nikResult.valid) {
+        return response.status(400).json({
+          success: false,
+          message: `NIK tidak valid: ${nikResult.message}`,
+        })
+      }
+
       if (!/^\d{16}$/.test(cleanKk)) {
         return response.status(400).json({
           success: false,
           message: 'Nomor KK harus 16 digit angka',
+        })
+      }
+
+      const kkResult = validateKK(cleanKk)
+      if (!kkResult.valid) {
+        return response.status(400).json({
+          success: false,
+          message: `Nomor KK tidak valid: ${kkResult.message}`,
         })
       }
 
@@ -96,6 +119,7 @@ export default class WargaController {
 
       user.nama = cleanNama
       user.no_hp = cleanNoHp
+      user.status = 'active'
       await user.save()
 
       const fotoKtpFile = request.file('foto_ktp', {

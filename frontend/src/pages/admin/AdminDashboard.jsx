@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -18,176 +18,221 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Filter,
-  Download,
   Eye,
   UserCheck,
   UserX,
+  AlertTriangle,
   MoreHorizontal,
+  Database,
+  EyeOff,
 } from "lucide-react";
 import "../../assets/style/css/AdminDashboard.css";
+import { getCachedUser } from "../../components/ProtectedRoute";
+
+const API = import.meta.env.VITE_API_URL || "http://localhost:3333";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [timeRange, setTimeRange] = useState("7d");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [timeRange, setTimeRange] = useState("year");
+  const [filterBulan, setFilterBulan] = useState(0);
+  const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(true);
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [quickActionsHidden, setQuickActionsHidden] = useState(false);
+  const quickActionsRef = useRef(null);
+  const user = getCachedUser();
+  const showQuickActions = user?.role && user.role !== "warga" && !quickActionsHidden;
+  const [error, setError] = useState(null);
 
-  // Mock data - nanti diganti dengan API call
   const [stats, setStats] = useState({
-    totalWarga: 142,
-    wargaBaru: 8,
-    totalTagihan: 2840000,
-    tagihanLunas: 1980000,
-    laporanBaru: 12,
-    suratPending: 5,
-    wargaPending: 3,
-    pendapatanBulanIni: 4500000,
+    totalWarga: 0,
+    wargaPending: 0,
+    wargaNonOnboarded: 0,
+    laporanBaru: 0,
+    suratPending: 0,
+    pendapatanBulanIni: 0,
   });
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [nonOnboarded, setNonOnboarded] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [tagihanStats, setTagihanStats] = useState([]);
 
-  const [pendingApprovals, setPendingApprovals] = useState([
-    {
-      id: 1,
-      nama: "Budi Santoso",
-      nik: "3201234567890123",
-      alamat: "Jl. Mawar No. 12, RT 003",
-      no_rumah: "12",
-      status_huni: "pemilik",
-      foto_ktp_url: null,
-      submitted_at: "2026-05-01T10:30:00",
-      email: "budi.santoso@email.com",
-      no_hp: "081234567890",
-    },
-    {
-      id: 2,
-      nama: "Siti Aminah",
-      nik: "3201234567890456",
-      alamat: "Jl. Melati No. 8, RT 003",
-      no_rumah: "8",
-      status_huni: "penyewa",
-      foto_ktp_url: null,
-      submitted_at: "2026-04-30T14:15:00",
-      email: "siti.aminah@email.com",
-      no_hp: "081298765432",
-    },
-    {
-      id: 3,
-      nama: "Ahmad Rizki",
-      nik: "3201234567890789",
-      alamat: "Jl. Anggrek No. 15, RT 003",
-      no_rumah: "15",
-      status_huni: "pemilik",
-      foto_ktp_url: null,
-      submitted_at: "2026-04-29T09:00:00",
-      email: "ahmad.rizki@email.com",
-      no_hp: "081345678901",
-    },
-  ]);
+  const bulanIndo = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-  const [recentActivities, setRecentActivities] = useState([
-    {
-      id: 1,
-      type: "warga_verified",
-      message: "Warga Budi Santoso telah diverifikasi",
-      time: "10 menit yang lalu",
-      icon: UserCheck,
-      color: "success",
-    },
-    {
-      id: 2,
-      type: "payment",
-      message: "Pembayaran uang sampah Rp 150.000 dari Ibu Siti",
-      time: "1 jam yang lalu",
-      icon: Wallet,
-      color: "primary",
-    },
-    {
-      id: 3,
-      type: "report",
-      message: 'Laporan baru: "Lampu jalan mati di Gang Mawar"',
-      time: "2 jam yang lalu",
-      icon: FileText,
-      color: "warning",
-    },
-    {
-      id: 4,
-      type: "surat",
-      message: "Surat pengantar diajukan oleh Pak Ahmad",
-      time: "3 jam yang lalu",
-      icon: FileText,
-      color: "info",
-    },
-    {
-      id: 5,
-      type: "warga_rejected",
-      message: "Pendaftaran warga Dedi ditolak - NIK tidak valid",
-      time: "5 jam yang lalu",
-      icon: UserX,
-      color: "danger",
-    },
-  ]);
+  const fetchData = useCallback(async () => {
+    try {
+      const bulan = filterBulan || 0;
+      const tahun = filterTahun;
 
-  const [monthlyData] = useState([
-    { month: "Jan", income: 3200000, expense: 2100000 },
-    { month: "Feb", income: 3800000, expense: 2400000 },
-    { month: "Mar", income: 4100000, expense: 2800000 },
-    { month: "Apr", income: 3600000, expense: 2200000 },
-    { month: "Mei", income: 4500000, expense: 3100000 },
-  ]);
+      const [dashboardRes, rekapRes, sampahRes, qurbanRes, notifRes] = await Promise.all([
+        fetch(`${API}/api/admin/dashboard`, { credentials: "include" }),
+        fetch(`${API}/api/admin/keuangan/rekap?bulan=${bulan}&tahun=${tahun}`, { credentials: "include" }),
+        fetch(`${API}/api/admin/sampah?bulan=${bulan || new Date().getMonth() + 1}&tahun=${tahun}`, { credentials: "include" }),
+        fetch(`${API}/api/admin/qurban?tahun=${tahun}`, { credentials: "include" }),
+        fetch(`${API}/api/notifikasi`, { credentials: "include" }),
+      ]);
 
-  const [tagihanStats] = useState([
-    {
-      label: "Uang Sampah",
-      total: 180,
-      paid: 156,
-      pending: 24,
-      amount: 1800000,
-    },
-    { label: "Uang Kurban", total: 45, paid: 32, pending: 13, amount: 9600000 },
-    {
-      label: "Iuran Keamanan",
-      total: 142,
-      paid: 128,
-      pending: 14,
-      amount: 2840000,
-    },
-  ]);
+      const dashboard = await dashboardRes.json();
+      const rekap = await rekapRes.json();
+      const sampah = await sampahRes.json();
+      const qurban = await qurbanRes.json();
+      const notif = await notifRes.json();
 
+      if (dashboard.success) {
+        setStats({
+          totalWarga: dashboard.stats.totalWarga,
+          wargaPending: dashboard.stats.wargaPending,
+          wargaNonOnboarded: dashboard.stats.wargaNonOnboarded,
+          wargaVerified: dashboard.stats.wargaVerified,
+          laporanBaru: 0,
+          suratPending: 0,
+          pendapatanBulanIni: rekap.success ? rekap.data.totalPemasukan : 0,
+        });
+
+        const pending = (dashboard.recentPending || []).map((p) => ({
+          id: p.id,
+          nama: p.nama,
+          email: p.email,
+          nik: p.nik || "-",
+          alamat: p.alamat || "-",
+          no_rumah: p.no_rumah || "-",
+          status_huni: p.status_huni || "pemilik",
+          foto_ktp_url: null,
+          submitted_at: p.created_at,
+          no_hp: "",
+          tipe: "verifikasi",
+        }));
+        setPendingApprovals(pending);
+
+        const nonOnboard = (dashboard.recentNonOnboarded || []).map((p) => ({
+          id: `no-${p.id}`,
+          nama: p.nama,
+          email: p.email,
+          nik: "-",
+          alamat: "-",
+          no_rumah: "-",
+          status_huni: "-",
+          foto_ktp_url: null,
+          submitted_at: p.created_at,
+          no_hp: "",
+          tipe: "onboarding",
+        }));
+        setNonOnboarded(nonOnboard);
+      }
+
+      if (rekap.success) {
+        const chart = rekap.data.chartBulanan || [];
+        let filteredChart;
+        if (filterBulan) {
+          filteredChart = chart.filter((m) => m.bulan === filterBulan);
+        } else if (timeRange === "quarter") {
+          const qStart = Math.max(1, new Date().getMonth() - 2);
+          filteredChart = chart.filter((m) => m.bulan >= qStart && m.bulan <= new Date().getMonth() + 1);
+        } else {
+          filteredChart = chart;
+        }
+        setMonthlyData(
+          (filteredChart.length > 0 ? filteredChart : chart.slice(-5)).map((m) => ({
+            month: bulanIndo[m.bulan] || `Bln ${m.bulan}`,
+            income: m.pemasukan,
+            expense: m.pengeluaran,
+          }))
+        );
+
+        setStats((prev) => ({
+          ...prev,
+          pendapatanBulanIni: rekap.data.totalPemasukan,
+        }));
+      }
+
+      if (sampah.success && qurban.success) {
+        const sampahTotal = sampah.data?.meta?.totalIuran || 0;
+        const sampahPaid = sampah.data?.meta?.totalLunas || 0;
+        const sampahPending = sampahTotal > 0 ? sampahTotal - sampahPaid : 0;
+        const sampahAmount = sampah.data?.meta?.totalNominal || 0;
+
+        const qurbanTotal = qurban.data?.meta?.totalIuran || 0;
+        const qurbanPaid = qurban.data?.meta?.totalLunas || 0;
+        const qurbanPending = qurbanTotal > 0 ? qurbanTotal - qurbanPaid : 0;
+        const qurbanAmount = qurban.data?.meta?.totalNominal || 0;
+
+        setTagihanStats([
+          { label: "Uang Sampah", total: sampahTotal, paid: sampahPaid, pending: sampahPending, amount: sampahAmount },
+          { label: "Uang Qurban", total: qurbanTotal, paid: qurbanPaid, pending: qurbanPending, amount: qurbanAmount },
+        ]);
+      }
+
+      if (notif.success) {
+        setRecentActivities(
+          (notif.data || []).slice(0, 5).map((n) => ({
+            id: n.id,
+            type: n.tipe || "info",
+            message: n.pesan || n.judul,
+            time: n.created_at,
+            icon: n.tipe === "darurat" ? AlertCircle : Bell,
+            color: n.tipe === "darurat" ? "danger" : "info",
+          }))
+        );
+      }
+    } catch (e) {
+      console.error("Dashboard fetch error:", e);
+      setError("Gagal memuat data dashboard");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filterBulan, filterTahun, timeRange]);
+
+  // Initial fetch + refetch on filter change (tanpa loading spinner, biar gak lompat)
   useEffect(() => {
-    // Simulate API loading
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    fetchData();
+  }, [fetchData]);
+
+  // Close quick action dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (quickActionsRef.current && !quickActionsRef.current.contains(e.target)) {
+        setQuickActionsOpen(false);
+      }
+    };
+    if (quickActionsOpen) {
+      document.addEventListener("mousedown", handleClick);
+    }
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [quickActionsOpen]);
 
   const handleApprove = async (id) => {
-    // TODO: API call to approve warga
-    setPendingApprovals((prev) => prev.filter((item) => item.id !== id));
-    // Add to activity log
-    const approved = pendingApprovals.find((item) => item.id === id);
-    if (approved) {
-      setRecentActivities((prev) => [
-        {
-          id: Date.now(),
-          type: "warga_verified",
-          message: `Warga ${approved.nama} telah diverifikasi`,
-          time: "Baru saja",
-          icon: UserCheck,
-          color: "success",
-        },
-        ...prev.slice(0, 4),
-      ]);
-    }
+    try {
+      const res = await fetch(`${API}/api/admin/warga/${id}/verify`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (json.success) {
+        setPendingApprovals((prev) => prev.filter((item) => item.id !== id));
+        setStats((prev) => ({ ...prev, wargaPending: prev.wargaPending - 1 }));
+      }
+    } catch {}
   };
 
   const handleReject = async (id) => {
-    // TODO: API call to reject warga
-    setPendingApprovals((prev) => prev.filter((item) => item.id !== id));
+    try {
+      const res = await fetch(`${API}/api/admin/warga/${id}/reject`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (json.success) {
+        setPendingApprovals((prev) => prev.filter((item) => item.id !== id));
+        setStats((prev) => ({ ...prev, wargaPending: prev.wargaPending - 1 }));
+      }
+    } catch {}
   };
 
   const handleViewDetail = (id) => {
-    // TODO: Navigate to warga detail page
-    console.log("View detail:", id);
+    navigate(`/admin/warga/${id}`);
   };
 
   const formatCurrency = (amount) => {
@@ -199,8 +244,8 @@ export default function AdminDashboard() {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("id-ID", {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -210,6 +255,7 @@ export default function AdminDashboard() {
   };
 
   const getTimeAgo = (dateString) => {
+    if (!dateString) return "-";
     const now = new Date();
     const past = new Date(dateString);
     const diffMs = now - past;
@@ -224,12 +270,17 @@ export default function AdminDashboard() {
     return formatDate(dateString);
   };
 
-  const filteredApprovals = pendingApprovals.filter((item) => {
+  const allPending = [...pendingApprovals, ...nonOnboarded];
+  const filteredApprovals = allPending.filter((item) => {
     const matchesSearch =
       item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.nik.includes(searchQuery);
     const matchesFilter =
-      selectedFilter === "all" || item.status_huni === selectedFilter;
+      selectedFilter === "all" ||
+      (selectedFilter === "pemilik" && item.status_huni === "pemilik") ||
+      (selectedFilter === "penyewa" && item.status_huni === "penyewa") ||
+      (selectedFilter === "onboarding" && item.tipe === "onboarding") ||
+      (selectedFilter === "verifikasi" && item.tipe === "verifikasi");
     return matchesSearch && matchesFilter;
   });
 
@@ -278,6 +329,17 @@ export default function AdminDashboard() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="admin-dashboard admin-dashboard--loading">
+        <div className="loading-spinner">
+          <AlertCircle size={32} />
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-dashboard">
       {/* Header Section */}
@@ -285,35 +347,44 @@ export default function AdminDashboard() {
         <div className="dashboard-header__left">
           <h1 className="dashboard-header__title">Dashboard Admin</h1>
           <p className="dashboard-header__subtitle">
-            Selamat datang kembali, Ketua RT-003. Berikut ringkasan aktivitas
-            hari ini.
+            Berikut ringkasan aktivitas hari ini.
           </p>
         </div>
         <div className="dashboard-header__right">
           <div className="time-filter">
-            {["7d", "30d", "90d", "1y"].map((range) => (
+            {[
+              { key: "month", label: "Bulan", fn: () => { setTimeRange("month"); setFilterBulan(new Date().getMonth() + 1); } },
+              { key: "quarter", label: "3 Bln", fn: () => { setTimeRange("quarter"); setFilterBulan(0); } },
+              { key: "year", label: "Tahun", fn: () => { setTimeRange("year"); setFilterBulan(0); } },
+            ].map((opt) => (
               <button
-                key={range}
-                className={`time-filter__btn ${timeRange === range ? "time-filter__btn--active" : ""}`}
-                onClick={() => setTimeRange(range)}
+                key={opt.key}
+                className={`time-filter__btn ${timeRange === opt.key ? "time-filter__btn--active" : ""}`}
+                onClick={opt.fn}
               >
-                {range === "7d"
-                  ? "7 Hari"
-                  : range === "30d"
-                    ? "30 Hari"
-                    : range === "90d"
-                      ? "3 Bulan"
-                      : "1 Tahun"}
+                {opt.label}
               </button>
             ))}
           </div>
-          <button
-            className="btn-export"
-            onClick={() => console.log("Export report")}
+          <select
+            className={`filter-select--header ${filterBulan ? "filter-select--active" : ""}`}
+            value={filterBulan}
+            onChange={(e) => { setFilterBulan(Number(e.target.value)); setTimeRange("custom"); }}
           >
-            <Download size={16} />
-            Export
-          </button>
+            <option value={0}>Semua Bln</option>
+            {["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"].map((nama, i) => (
+              <option key={i + 1} value={i + 1}>{nama}</option>
+            ))}
+          </select>
+          <select
+            className={`filter-select--header ${filterTahun !== new Date().getFullYear() ? "filter-select--active" : ""}`}
+            value={filterTahun}
+            onChange={(e) => setFilterTahun(Number(e.target.value))}
+          >
+            {[2024, 2025, 2026, 2027].map((th) => (
+              <option key={th} value={th}>{th}</option>
+            ))}
+          </select>
         </div>
       </header>
 
@@ -322,10 +393,10 @@ export default function AdminDashboard() {
         <StatCard
           title="Total Warga"
           value={stats.totalWarga}
-          subtitle={`+${stats.wargaBaru} baru bulan ini`}
+          subtitle={`${stats.wargaPending} menunggu verifikasi`}
           icon={Users}
           trend="up"
-          trendValue="5.6%"
+          trendValue="verified"
           color="primary"
           onClick={() => navigate("/admin/warga")}
         />
@@ -335,27 +406,35 @@ export default function AdminDashboard() {
           subtitle="Dari semua sumber"
           icon={Wallet}
           trend="up"
-          trendValue="12.3%"
+          trendValue=""
           color="success"
         />
         <StatCard
-          title="Tagihan Belum Lunas"
-          value={formatCurrency(stats.totalTagihan - stats.tagihanLunas)}
-          subtitle={`${Math.round(((stats.totalTagihan - stats.tagihanLunas) / stats.totalTagihan) * 100)}% dari total`}
+          title="Warga Menunggu"
+          value={stats.wargaPending}
+          subtitle="perlu verifikasi"
           icon={AlertCircle}
           trend="down"
-          trendValue="3.2%"
+          trendValue=""
           color="warning"
         />
         <StatCard
-          title="Laporan Warga"
-          value={stats.laporanBaru}
-          subtitle={`${stats.laporanBaru} belum ditangani`}
+          title="Belum Onboarding"
+          value={stats.wargaNonOnboarded}
+          subtitle="belum isi profil"
+          icon={AlertTriangle}
+          trend="down"
+          trendValue=""
+          color="danger"
+        />
+        <StatCard
+          title="Pengajuan Surat"
+          value={stats.suratPending}
+          subtitle="menunggu diproses"
           icon={FileText}
           trend="up"
-          trendValue="8.1%"
+          trendValue=""
           color="danger"
-          onClick={() => navigate("/admin/laporan")}
         />
       </section>
 
@@ -372,16 +451,16 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h2 className="section-header__title">
-                    Antrean Verifikasi Warga
+                    Antrean Warga
                   </h2>
                   <p className="section-header__subtitle">
-                    {pendingApprovals.length} warga menunggu persetujuan
+                    {pendingApprovals.length} verifikasi + {nonOnboarded.length} onboarding
                   </p>
                 </div>
               </div>
               <button
                 className="btn-text"
-                onClick={() => navigate("/admin/warga/verifikasi")}
+                onClick={() => navigate("/admin/warga")}
               >
                 Lihat Semua
                 <ChevronRight size={16} />
@@ -407,7 +486,9 @@ export default function AdminDashboard() {
                   onChange={(e) => setSelectedFilter(e.target.value)}
                   className="filter-select"
                 >
-                  <option value="all">Semua Status</option>
+                  <option value="all">Semua</option>
+                  <option value="verifikasi">Menunggu Verifikasi</option>
+                  <option value="onboarding">Belum Onboarding</option>
                   <option value="pemilik">Pemilik</option>
                   <option value="penyewa">Penyewa</option>
                 </select>
@@ -435,11 +516,14 @@ export default function AdminDashboard() {
                     <div className="approval-item__content">
                       <div className="approval-item__header">
                         <h4 className="approval-item__name">{item.nama}</h4>
-                        <span className={`badge badge--${item.status_huni}`}>
-                          {item.status_huni === "pemilik"
-                            ? "Pemilik"
-                            : "Penyewa"}
-                        </span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {item.tipe === "onboarding" && (
+                            <span className="badge badge--onboarding">Baru</span>
+                          )}
+                          <span className={`badge badge--${item.status_huni === "pemilik" || item.status_huni === "penyewa" ? item.status_huni : "muted"}`}>
+                            {item.tipe === "onboarding" ? "Onboarding" : item.status_huni === "pemilik" ? "Pemilik" : item.status_huni === "penyewa" ? "Penyewa" : item.status_huni}
+                          </span>
+                        </div>
                       </div>
                       <div className="approval-item__details">
                         <span className="approval-item__detail">
@@ -459,25 +543,29 @@ export default function AdminDashboard() {
                     <div className="approval-item__actions">
                       <button
                         className="btn-icon btn-icon--view"
-                        onClick={() => handleViewDetail(item.id)}
-                        title="Lihat Detail"
+                        onClick={() => navigate("/admin/warga")}
+                        title={item.tipe === "onboarding" ? "Review" : "Lihat Detail"}
                       >
                         <Eye size={18} />
                       </button>
-                      <button
-                        className="btn-icon btn-icon--approve"
-                        onClick={() => handleApprove(item.id)}
-                        title="Setujui"
-                      >
-                        <CheckCircle2 size={18} />
-                      </button>
-                      <button
-                        className="btn-icon btn-icon--reject"
-                        onClick={() => handleReject(item.id)}
-                        title="Tolak"
-                      >
-                        <XCircle size={18} />
-                      </button>
+                      {item.tipe === "verifikasi" && (
+                        <>
+                          <button
+                            className="btn-icon btn-icon--approve"
+                            onClick={() => handleApprove(item.id)}
+                            title="Setujui"
+                          >
+                            <CheckCircle2 size={18} />
+                          </button>
+                          <button
+                            className="btn-icon btn-icon--reject"
+                            onClick={() => handleReject(item.id)}
+                            title="Tolak"
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))
@@ -505,6 +593,7 @@ export default function AdminDashboard() {
                 {monthlyData.map((data, index) => {
                   const maxValue = Math.max(
                     ...monthlyData.map((d) => Math.max(d.income, d.expense)),
+                    1,
                   );
                   const incomeHeight = (data.income / maxValue) * 100;
                   const expenseHeight = (data.expense / maxValue) * 100;
@@ -561,39 +650,45 @@ export default function AdminDashboard() {
                   <PieChart size={20} />
                 </div>
                 <div>
-                  <h2 className="section-header__title">Ringkasan Tagihan</h2>
+                  <h2 className="section-header__title">Ringkasan Iuran</h2>
                 </div>
               </div>
             </div>
             <div className="tagihan-list">
-              {tagihanStats.map((tagihan, index) => (
-                <div key={index} className="tagihan-item">
-                  <div className="tagihan-item__info">
-                    <h4 className="tagihan-item__name">{tagihan.label}</h4>
-                    <p className="tagihan-item__amount">
-                      {formatCurrency(tagihan.amount)}
-                    </p>
-                  </div>
-                  <div className="tagihan-item__progress">
-                    <div className="progress-bar">
-                      <div
-                        className="progress-bar__fill"
-                        style={{
-                          width: `${(tagihan.paid / tagihan.total) * 100}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <div className="tagihan-item__stats">
-                      <span className="tagihan-item__paid">
-                        {tagihan.paid} lunas
-                      </span>
-                      <span className="tagihan-item__pending">
-                        {tagihan.pending} pending
-                      </span>
-                    </div>
-                  </div>
+              {tagihanStats.length === 0 ? (
+                <div className="approval-empty" style={{ padding: "16px" }}>
+                  <p className="approval-empty__subtitle">Belum ada data iuran</p>
                 </div>
-              ))}
+              ) : (
+                tagihanStats.map((tagihan, index) => (
+                  <div key={index} className="tagihan-item">
+                    <div className="tagihan-item__info">
+                      <h4 className="tagihan-item__name">{tagihan.label}</h4>
+                      <p className="tagihan-item__amount">
+                        {formatCurrency(tagihan.amount)}
+                      </p>
+                    </div>
+                    <div className="tagihan-item__progress">
+                      <div className="progress-bar">
+                        <div
+                          className="progress-bar__fill"
+                          style={{
+                            width: `${tagihan.total > 0 ? (tagihan.paid / tagihan.total) * 100 : 0}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="tagihan-item__stats">
+                        <span className="tagihan-item__paid">
+                          {tagihan.paid} lunas
+                        </span>
+                        <span className="tagihan-item__pending">
+                          {tagihan.pending} pending
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
@@ -605,50 +700,75 @@ export default function AdminDashboard() {
                   <Bell size={20} />
                 </div>
                 <div>
-                  <h2 className="section-header__title">Aktivitas Terbaru</h2>
+                  <h2 className="section-header__title">Notifikasi Terbaru</h2>
                 </div>
               </div>
             </div>
             <div className="activity-list">
-              {recentActivities.map((activity) => {
-                const IconComponent = activity.icon;
-                return (
-                  <div key={activity.id} className="activity-item">
-                    <div
-                      className={`activity-item__icon activity-item__icon--${activity.color}`}
-                    >
-                      <IconComponent size={16} />
+              {recentActivities.length === 0 ? (
+                <div className="approval-empty" style={{ padding: "16px" }}>
+                  <p className="approval-empty__subtitle">Belum ada notifikasi</p>
+                </div>
+              ) : (
+                recentActivities.map((activity) => {
+                  const IconComponent = activity.icon;
+                  return (
+                    <div key={activity.id} className="activity-item">
+                      <div
+                        className={`activity-item__icon activity-item__icon--${activity.color}`}
+                      >
+                        <IconComponent size={16} />
+                      </div>
+                      <div className="activity-item__content">
+                        <p className="activity-item__message">
+                          {activity.message}
+                        </p>
+                        <span className="activity-item__time">
+                          {getTimeAgo(activity.time)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="activity-item__content">
-                      <p className="activity-item__message">
-                        {activity.message}
-                      </p>
-                      <span className="activity-item__time">
-                        {activity.time}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </section>
 
-          {/* Quick Actions */}
-          <section className="dashboard-section dashboard-section--compact">
-            <div className="section-header">
-              <div className="section-header__left">
-                <div className="section-header__icon section-header__icon--primary">
-                  <MoreHorizontal size={20} />
+          {/* Quick Actions — hanya admin & bendahara */}
+          {showQuickActions && <section className="dashboard-section dashboard-section--compact">
+              <div className="section-header">
+                <div className="section-header__left">
+                  <div>
+                    <h2 className="section-header__title">Aksi Cepat</h2>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="section-header__title">Aksi Cepat</h2>
+                <div className="quick-actions__menu-wrap" ref={quickActionsRef}>
+                  <button
+                    className="quick-actions__trigger"
+                    onClick={() => setQuickActionsOpen((prev) => !prev)}
+                  >
+                    <MoreHorizontal size={18} />
+                  </button>
+                  {quickActionsOpen && (
+                    <div className="quick-actions__dropdown">
+                      <button
+                        className="quick-actions__dropdown-item quick-actions__dropdown-item--danger"
+                        onClick={() => {
+                          setQuickActionsOpen(false);
+                          setQuickActionsHidden(true);
+                        }}
+                      >
+                        <EyeOff size={16} />
+                        <span>Sembunyikan</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
             <div className="quick-actions">
               <button
                 className="quick-action"
-                onClick={() => navigate("/admin/warga/tambah")}
+                onClick={() => navigate("/admin/warga")}
               >
                 <div className="quick-action__icon quick-action__icon--primary">
                   <Users size={20} />
@@ -657,7 +777,7 @@ export default function AdminDashboard() {
               </button>
               <button
                 className="quick-action"
-                onClick={() => navigate("/admin/pengumuman/baru")}
+                onClick={() => navigate("/admin/pengumuman")}
               >
                 <div className="quick-action__icon quick-action__icon--warning">
                   <Bell size={20} />
@@ -666,12 +786,12 @@ export default function AdminDashboard() {
               </button>
               <button
                 className="quick-action"
-                onClick={() => navigate("/admin/keuangan/catat")}
+                onClick={() => { window.scrollTo(0, 0); navigate("/admin/keuangan"); }}
               >
                 <div className="quick-action__icon quick-action__icon--success">
                   <Wallet size={20} />
                 </div>
-                <span className="quick-action__label">Catat Transaksi</span>
+                <span className="quick-action__label">Catat Pengeluaran</span>
               </button>
               <button
                 className="quick-action"
@@ -682,8 +802,36 @@ export default function AdminDashboard() {
                 </div>
                 <span className="quick-action__label">Lihat Laporan</span>
               </button>
+              <button
+                className="quick-action"
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`${API}/api/admin/sheets/setup`, {
+                      method: "POST",
+                      credentials: "include",
+                    });
+                    const json = await res.json();
+                    alert(json.message || (json.success ? "Spreadsheet berhasil di-setup" : "Gagal setup spreadsheet"));
+                  } catch {
+                    alert("Gagal setup spreadsheet");
+                  }
+                }}
+              >
+                <div className="quick-action__icon quick-action__icon--info">
+                  <Database size={20} />
+                </div>
+                <span className="quick-action__label">Setup Spreadsheet</span>
+              </button>
             </div>
-          </section>
+          </section>}
+          {user?.role && user.role !== "warga" && quickActionsHidden && (
+            <div className="quick-actions__restore">
+              <button onClick={() => setQuickActionsHidden(false)}>
+                <EyeOff size={14} />
+                <span>Aksi Cepat disembunyikan &middot; Tampilkan</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

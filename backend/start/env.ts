@@ -14,6 +14,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   // ✅ Google (optional, tapi sudah kamu pakai di project)
   GOOGLE_CLIENT_ID: Env.schema.string.optional(),
   GOOGLE_CLIENT_SECRET: Env.schema.string.optional(),
+  GOOGLE_CALLBACK_URL: Env.schema.string.optional(),
 
   // ✅ Database
   DB_HOST: Env.schema.string(),

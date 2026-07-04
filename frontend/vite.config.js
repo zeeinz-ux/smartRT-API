@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     adonisjs({
       // Sesuaikan dengan file utama di folder src kamu
-      entrypoints: ["src/app.jsx"],
+      entrypoints: ["src/App.jsx"],
       buildDirectory: "../public/assets",
     }),
     react(),

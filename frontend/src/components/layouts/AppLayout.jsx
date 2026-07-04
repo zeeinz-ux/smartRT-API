@@ -1,6 +1,9 @@
 // src/layouts/AppLayout.jsx
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import EmergencyFab from "../EmergencyFab";
+import NotificationDropdown from "../NotificationDropdown";
+import { clearAuthCache, getCachedUser } from "../ProtectedRoute";
 // ✅ FIX: Pastikan path CSS benar
 import "../../assets/style/css/AppLayout.css";
 
@@ -21,8 +24,8 @@ const MENUS = {
       group: "Keuangan",
       items: [
         { to: "/admin/sampah", label: "Uang Sampah", icon: <IconTrash /> },
-        { to: "/admin/kurban", label: "Uang Kurban", icon: <IconHeart /> },
-        { to: "/admin/keuangan", label: "Keuangan", icon: <IconWallet /> },
+        { to: "/admin/kurban", label: "Uang Qurban", icon: <IconHeart /> },
+        { to: "/admin/keuangan", label: "Rekap Keuangan", icon: <IconWallet /> },
       ],
     },
     {
@@ -33,15 +36,40 @@ const MENUS = {
         { to: "/admin/surat", label: "Surat Pengantar", icon: <IconDoc /> },
       ],
     },
+    {
+      group: "Lainnya",
+      items: [
+        { to: "/admin/darurat", label: "Darurat", icon: <IconPhone /> },
+        { to: "/pengaturan", label: "Pengaturan", icon: <IconSettings /> },
+      ],
+    },
   ],
   bendahara: [
     {
-      group: "Keuangan",
+      group: "Utama",
       items: [
         { to: "/bendahara/dashboard", label: "Dashboard", icon: <IconGrid /> },
+      ],
+    },
+    {
+      group: "Keuangan",
+      items: [
         { to: "/bendahara/sampah", label: "Uang Sampah", icon: <IconTrash /> },
-        { to: "/bendahara/kurban", label: "Uang Kurban", icon: <IconHeart /> },
-        { to: "/bendahara/keuangan", label: "Keuangan", icon: <IconWallet /> },
+        { to: "/bendahara/kurban", label: "Uang Qurban", icon: <IconHeart /> },
+        { to: "/bendahara/keuangan", label: "Rekap Keuangan", icon: <IconWallet /> },
+      ],
+    },
+    {
+      group: "Layanan",
+      items: [
+        { to: "/admin/laporan", label: "Laporan Warga", icon: <IconFlag /> },
+      ],
+    },
+    {
+      group: "Lainnya",
+      items: [
+        { to: "/admin/darurat", label: "Darurat", icon: <IconPhone /> },
+        { to: "/pengaturan", label: "Pengaturan", icon: <IconSettings /> },
       ],
     },
   ],
@@ -50,6 +78,11 @@ const MENUS = {
       group: "Utama",
       items: [
         { to: "/warga/dashboard", label: "Dashboard", icon: <IconGrid /> },
+      ],
+    },
+    {
+      group: "Tagihan",
+      items: [
         { to: "/warga/tagihan", label: "Tagihan Saya", icon: <IconWallet /> },
       ],
     },
@@ -59,6 +92,13 @@ const MENUS = {
         { to: "/warga/laporan", label: "Buat Laporan", icon: <IconFlag /> },
         { to: "/warga/surat", label: "Surat Pengantar", icon: <IconDoc /> },
         { to: "/warga/pengumuman", label: "Pengumuman", icon: <IconBell /> },
+      ],
+    },
+    {
+      group: "Lainnya",
+      items: [
+        { to: "/warga/darurat", label: "Riwayat Darurat", icon: <IconPhone /> },
+        { to: "/pengaturan", label: "Pengaturan", icon: <IconSettings /> },
       ],
     },
   ],
@@ -184,6 +224,13 @@ function IconDoc() {
     </svg>
   );
 }
+function IconPhone() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
 function IconLogout() {
   return (
     <svg
@@ -195,6 +242,14 @@ function IconLogout() {
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+function IconSettings() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   );
 }
@@ -219,6 +274,28 @@ function IconChevron() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+function IconSun() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+function IconMoon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
   );
 }
@@ -310,12 +387,8 @@ function Sidebar({ user, menus, isOpen, onClose, onLogout, loggingOut }) {
           <div className="apl-brand__logo">
             <svg viewBox="0 0 40 40" fill="none">
               <rect width="40" height="40" rx="10" fill="var(--clr-primary)" />
-              <path
-                d="M20 8L28 14V26L20 32L12 26V14L20 8Z"
-                fill="white"
-                fillOpacity="0.9"
-              />
-              <circle cx="20" cy="20" r="4" fill="var(--clr-primary)" />
+              <path d="M20 8L28 14V26L20 32L12 26V14L20 8Z" fill="white" fillOpacity="0.95" />
+              <circle cx="20" cy="20" r="4" fill="var(--clr-primary)" opacity="0.9" />
             </svg>
           </div>
           <div className="apl-brand__text">
@@ -329,10 +402,13 @@ function Sidebar({ user, menus, isOpen, onClose, onLogout, loggingOut }) {
 
         {/* User card */}
         <div className="apl-user-card">
-          <Avatar nama={user?.nama} foto_url={user?.foto_url} size="md" />
+          <div className="apl-user-card__avatar">
+            <Avatar nama={user?.nama} foto_url={user?.foto_url} size="md" />
+          </div>
           <div className="apl-user-card__info">
             <span className="apl-user-card__name">{user?.nama || "—"}</span>
-            <span className={`apl-role-badge apl-role-badge--${user?.role}`}>
+            <span className="apl-user-card__role">
+              <span className={`apl-user-card__badge apl-user-card__badge--${user?.role}`} />
               {ROLE_LABELS[user?.role] || user?.role}
             </span>
           </div>
@@ -354,7 +430,6 @@ function Sidebar({ user, menus, isOpen, onClose, onLogout, loggingOut }) {
                 >
                   <span className="apl-nav__icon">{item.icon}</span>
                   <span className="apl-nav__label">{item.label}</span>
-                  <span className="apl-nav__active-bar" />
                 </NavLink>
               ))}
             </div>
@@ -389,6 +464,9 @@ function Topbar({
   onLogout,
   loggingOut,
   dropdownRef,
+  showNotifDropdown,
+  onNotifClose,
+  notifWrapRef,
 }) {
   return (
     <header className="apl-topbar">
@@ -409,18 +487,21 @@ function Topbar({
       {/* Right: notif + avatar */}
       <div className="apl-topbar__right">
         {/* Notification bell */}
-        <button
-          className="apl-topbar__btn"
-          onClick={onNotifClick}
-          aria-label="Notifikasi"
-        >
-          <IconBell />
-          {notifCount > 0 && (
-            <span className="apl-notif-badge">
-              {notifCount > 9 ? "9+" : notifCount}
-            </span>
-          )}
-        </button>
+        <div className="apl-notif-wrap" ref={notifWrapRef}>
+          <button
+            className="apl-topbar__btn"
+            onClick={onNotifClick}
+            aria-label="Notifikasi"
+          >
+            <IconBell />
+            {notifCount > 0 && (
+              <span className="apl-notif-badge">
+                {notifCount > 9 ? "9+" : notifCount}
+              </span>
+            )}
+          </button>
+          {showNotifDropdown && <NotificationDropdown onClose={onNotifClose} />}
+        </div>
 
         {/* Avatar dropdown */}
         <div className="apl-avatar-wrap" ref={dropdownRef}>
@@ -468,19 +549,28 @@ function Topbar({
 // ─── Main AppLayout ───────────────────────────────────────────────────────────
 export default function AppLayout({ children }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [authStatus, setAuthStatus] = useState("loading");
+  const location = useLocation();
+  const [user, setUser] = useState(() => getCachedUser());
+  const [authStatus, setAuthStatus] = useState(() => getCachedUser() ? "ok" : "loading");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [notifCount] = useState(3); // TODO: fetch from API
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
   const dropdownRef = useRef(null);
+  const notifWrapRef = useRef(null);
 
   const menus = MENUS[user?.role] || [];
   const pageTitle = usePageTitle(menus);
 
-  // Fetch current user
+  // Scroll ke atas tiap ganti halaman
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  // Fetch current user (skip kalo udah di-cache)
+  useEffect(() => {
+    if (getCachedUser()) return;
     let cancelled = false;
     async function fetchUser() {
       try {
@@ -514,6 +604,22 @@ export default function AppLayout({ children }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Close notification dropdown on outside click (pake 'mousedown' biar gak tabrakan sama state toggle)
+  useEffect(() => {
+    function handleNotifClick(e) {
+      if (!showNotifDropdown) return;
+      if (
+        notifWrapRef.current &&
+        !notifWrapRef.current.contains(e.target) &&
+        !e.target.closest(".notif-dropdown")
+      ) {
+        setShowNotifDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleNotifClick);
+    return () => document.removeEventListener("mousedown", handleNotifClick);
+  }, [showNotifDropdown]);
+
   // Close sidebar on resize to desktop
   useEffect(() => {
     function handleResize() {
@@ -523,8 +629,38 @@ export default function AppLayout({ children }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    const root = document.querySelector(".apl-root");
+    if (!root) return;
+    if (sidebarOpen && window.innerWidth < 1024) {
+      root.classList.add("apl-root--sidebar-open");
+    } else {
+      root.classList.remove("apl-root--sidebar-open");
+    }
+  }, [sidebarOpen]);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    async function fetchUnread() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/notifikasi`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (data.success) {
+          setNotifCount(data.unread_count);
+        }
+      } catch {}
+    }
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   async function handleLogout() {
     setLoggingOut(true);
+    clearAuthCache();
     try {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: "POST",
@@ -580,16 +716,21 @@ export default function AppLayout({ children }) {
           pageTitle={pageTitle}
           onMenuClick={() => setSidebarOpen(true)}
           notifCount={notifCount}
-          onNotifClick={() => {}}
+          onNotifClick={() => setShowNotifDropdown((v) => !v)}
           onAvatarClick={() => setShowUserDropdown((v) => !v)}
           showUserDropdown={showUserDropdown}
           onLogout={handleLogout}
           loggingOut={loggingOut}
           dropdownRef={dropdownRef}
+          showNotifDropdown={showNotifDropdown}
+          onNotifClose={() => setShowNotifDropdown(false)}
+          notifWrapRef={notifWrapRef}
         />
 
-        <main className="apl-content">{children}</main>
+        <main className="apl-content" key={location.key}>{children}</main>
       </div>
+
+      <EmergencyFab user={user} />
     </div>
   );
 }

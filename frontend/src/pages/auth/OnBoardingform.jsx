@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import "../../assets/style/css/OnboardingForm.css";
+import { validateNIK, validateKK } from "../../utils/kependudukan.js";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3333";
@@ -20,22 +21,8 @@ const STATUS_HUNI_OPTIONS = [
 
 // ─── Validators ───────────────────────────────────────────────────────────────
 const validators = {
-  nik: (v) => {
-    const clean = (v || "").toString().trim();
-    if (!clean) return "NIK wajib diisi";
-    if (!/^\d+$/.test(clean)) return "NIK hanya boleh angka";
-    if (clean.length !== 16)
-      return `NIK harus 16 digit (sekarang ${clean.length} digit)`;
-    return null;
-  },
-  kk: (v) => {
-    const clean = (v || "").toString().trim();
-    if (!clean) return "Nomor KK wajib diisi";
-    if (!/^\d+$/.test(clean)) return "Nomor KK hanya boleh angka";
-    if (clean.length !== 16)
-      return `Nomor KK harus 16 digit (sekarang ${clean.length} digit)`;
-    return null;
-  },
+  nik: (v) => validateNIK(v),
+  kk: (v) => validateKK(v),
   nama_lengkap: (v) => {
     if (!v?.trim()) return "Nama lengkap wajib diisi";
     if (v.trim().length < 3) return "Nama terlalu pendek";
@@ -671,6 +658,12 @@ export default function OnboardingForm({ onComplete }) {
   const handleNext = () => {
     touchStepFields(step);
     if (!isStepValid(step)) return;
+
+    // Cross-field: NIK dan KK harus beda
+    if (step === 1 && data.nik && data.kk && data.nik === data.kk) {
+      return
+    }
+
     setStep((s) => Math.min(s + 1, STEPS.length));
   };
 
@@ -678,6 +671,9 @@ export default function OnboardingForm({ onComplete }) {
     setStep((s) => Math.max(s - 1, 1));
     setSubmitError(null);
   };
+
+  // Cross-field error untuk step 1
+  const nikKkSameError = step === 1 && data.nik && data.kk && data.nik === data.kk
 
   const handleSubmit = async () => {
     touchStepFields(step);
@@ -793,6 +789,11 @@ export default function OnboardingForm({ onComplete }) {
               touched={touched}
               onBlur={onBlur}
             />
+          )}
+          {step === 1 && nikKkSameError && (
+            <div className="obf-field-error obf-field-error--standalone" style={{ marginTop: 0 }}>
+              NIK dan Nomor KK tidak boleh sama
+            </div>
           )}
           {step === 2 && (
             <StepAlamat

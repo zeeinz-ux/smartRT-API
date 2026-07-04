@@ -7,6 +7,231 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class EmergencyAlertSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'keterangan', 'latitude', 'longitude', 'resolvedAt', 'resolvedBy', 'status', 'updatedAt', 'userId'] as const
+  $columns = EmergencyAlertSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare keterangan: string | null
+  @column()
+  declare latitude: string
+  @column()
+  declare longitude: string
+  @column.dateTime()
+  declare resolvedAt: DateTime | null
+  @column()
+  declare resolvedBy: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class IuranQurbanSchema extends BaseModel {
+  static $columns = ['bulan', 'createdAt', 'id', 'jumlah', 'keterangan', 'metodePembayaran', 'paidAt', 'status', 'tahun', 'updatedAt', 'wargaId'] as const
+  $columns = IuranQurbanSchema.$columns
+  @column()
+  declare bulan: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare jumlah: string
+  @column()
+  declare keterangan: string | null
+  @column()
+  declare metodePembayaran: string | null
+  @column.dateTime()
+  declare paidAt: DateTime | null
+  @column()
+  declare status: string
+  @column()
+  declare tahun: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare wargaId: string
+}
+
+export class IuranSampahSchema extends BaseModel {
+  static $columns = ['bulan', 'createdAt', 'id', 'jumlah', 'keterangan', 'metodePembayaran', 'paidAt', 'status', 'tahun', 'updatedAt', 'wargaId'] as const
+  $columns = IuranSampahSchema.$columns
+  @column()
+  declare bulan: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare jumlah: string
+  @column()
+  declare keterangan: string | null
+  @column()
+  declare metodePembayaran: string | null
+  @column.dateTime()
+  declare paidAt: DateTime | null
+  @column()
+  declare status: string
+  @column()
+  declare tahun: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare wargaId: string
+}
+
+export class LaporanSchema extends BaseModel {
+  static $columns = ['createdAt', 'ditanggapiAt', 'ditanggapiOleh', 'foto', 'id', 'isi', 'judul', 'status', 'tanggapan', 'updatedAt', 'userId'] as const
+  $columns = LaporanSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare ditanggapiAt: DateTime | null
+  @column()
+  declare ditanggapiOleh: string | null
+  @column()
+  declare foto: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isi: string
+  @column()
+  declare judul: string
+  @column()
+  declare status: string
+  @column()
+  declare tanggapan: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class NotifikasiSchema extends BaseModel {
+  static $columns = ['createdAt', 'data', 'id', 'message', 'readAt', 'title', 'type', 'updatedAt', 'userId'] as const
+  $columns = NotifikasiSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare data: any | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare message: string | null
+  @column.dateTime()
+  declare readAt: DateTime | null
+  @column()
+  declare title: string
+  @column()
+  declare type: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class PengeluaranSchema extends BaseModel {
+  static $columns = ['createdAt', 'createdBy', 'id', 'jumlah', 'kategori', 'keterangan', 'nama', 'tanggal', 'updatedAt'] as const
+  $columns = PengeluaranSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdBy: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare jumlah: string
+  @column()
+  declare kategori: string
+  @column()
+  declare keterangan: string | null
+  @column()
+  declare nama: string
+  @column.date()
+  declare tanggal: DateTime
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class PengumumanSchema extends BaseModel {
+  static $columns = ['createdAt', 'file', 'id', 'isi', 'judul', 'publishedAt', 'updatedAt', 'userId'] as const
+  $columns = PengumumanSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare file: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isi: string
+  @column()
+  declare judul: string
+  @column.dateTime()
+  declare publishedAt: DateTime | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class SuratPengantarSchema extends BaseModel {
+  static $columns = ['alasanTolak', 'approvedAt', 'approvedBy', 'createdAt', 'createdBy', 'filePdf', 'id', 'jenisSurat', 'keperluan', 'keterangan', 'nomorSurat', 'qrCode', 'status', 'updatedAt', 'userId'] as const
+  $columns = SuratPengantarSchema.$columns
+  @column()
+  declare alasanTolak: string | null
+  @column.dateTime()
+  declare approvedAt: DateTime | null
+  @column()
+  declare approvedBy: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare createdBy: string | null
+  @column()
+  declare filePdf: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare jenisSurat: string
+  @column()
+  declare keperluan: string
+  @column()
+  declare keterangan: string | null
+  @column()
+  declare nomorSurat: string | null
+  @column()
+  declare qrCode: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class SuratTemplateSchema extends BaseModel {
+  static $columns = ['createdAt', 'filePath', 'id', 'jenisSurat', 'originalName', 'updatedAt'] as const
+  $columns = SuratTemplateSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare filePath: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare jenisSurat: string
+  @column()
+  declare originalName: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['createdAt', 'email', 'fotoUrl', 'googleId', 'id', 'nama', 'noHp', 'passwordHash', 'role', 'status', 'updatedAt'] as const
   $columns = UserSchema.$columns

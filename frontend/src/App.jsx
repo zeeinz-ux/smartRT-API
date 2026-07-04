@@ -12,26 +12,21 @@ import OnBoardingform from "./pages/auth/OnBoardingform";
 
 // Dashboard pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import ManajemenWarga from "./pages/admin/ManajemenWarga"; // ✅ TAMBAH
-
-// Placeholder dashboards (buat sementara)
-function BendaharaDashboard() {
-  return (
-    <div style={{ padding: "2rem", textAlign: "center" }}>
-      <h1>Dashboard Bendahara</h1>
-      <p>Sedang dalam pengembangan...</p>
-    </div>
-  );
-}
-
-function WargaDashboard() {
-  return (
-    <div style={{ padding: "2rem", textAlign: "center" }}>
-      <h1>Dashboard Warga</h1>
-      <p>Sedang dalam pengembangan...</p>
-    </div>
-  );
-}
+import ManajemenWarga from "./pages/admin/ManajemenWarga";
+import UangSampah from "./pages/admin/UangSampah";
+import UangQurban from "./pages/admin/UangQurban";
+import Keuangan from "./pages/admin/Keuangan";
+import ManajemenLaporan from "./pages/admin/ManajemenLaporan";
+import AdminPengumuman from "./pages/admin/Pengumuman";
+import AdminSurat from "./pages/admin/Surat";
+import AdminDarurat from "./pages/admin/Darurat";
+import Settings from "./pages/Settings";
+import LaporanWarga from "./pages/warga/LaporanWarga";
+import WargaPengumuman from "./pages/warga/Pengumuman";
+import WargaSurat from "./pages/warga/Surat";
+import RiwayatDarurat from "./pages/warga/RiwayatDarurat";
+import BendaharaDashboard from "./pages/bendahara/BendaharaDashboard";
+import WargaDashboard from "./pages/warga/WargaDashboard";
 
 // Helper: wrap page dengan AppLayout + ProtectedRoute sekaligus
 function ProtectedPage({ children, allowedRoles }) {
@@ -77,6 +72,62 @@ export default function App() {
           </ProtectedPage>
         }
       />
+      <Route
+        path="/admin/sampah"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <UangSampah />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/kurban"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <UangQurban />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/keuangan"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <Keuangan />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/laporan"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <ManajemenLaporan />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/pengumuman"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <AdminPengumuman />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/surat"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <AdminSurat />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/darurat"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <AdminDarurat />
+          </ProtectedPage>
+        }
+      />
 
       {/* ── Bendahara ── */}
       <Route
@@ -84,6 +135,30 @@ export default function App() {
         element={
           <ProtectedPage allowedRoles={["bendahara", "admin"]}>
             <BendaharaDashboard />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/bendahara/sampah"
+        element={
+          <ProtectedPage allowedRoles={["bendahara", "admin"]}>
+            <UangSampah />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/bendahara/kurban"
+        element={
+          <ProtectedPage allowedRoles={["bendahara", "admin"]}>
+            <UangQurban />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/bendahara/keuangan"
+        element={
+          <ProtectedPage allowedRoles={["bendahara", "admin"]}>
+            <Keuangan />
           </ProtectedPage>
         }
       />
@@ -95,6 +170,50 @@ export default function App() {
           <ProtectedPage allowedRoles={["warga"]}>
             <WargaDashboard />
           </ProtectedPage>
+        }
+      />
+      <Route
+        path="/warga/laporan"
+        element={
+          <ProtectedPage allowedRoles={["warga"]}>
+            <LaporanWarga />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/warga/pengumuman"
+        element={
+          <ProtectedPage allowedRoles={["warga"]}>
+            <WargaPengumuman />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/warga/surat"
+        element={
+          <ProtectedPage allowedRoles={["warga"]}>
+            <WargaSurat />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/warga/darurat"
+        element={
+          <ProtectedPage allowedRoles={["warga"]}>
+            <RiwayatDarurat />
+          </ProtectedPage>
+        }
+      />
+
+      {/* ── Pengaturan (semua role) ── */}
+      <Route
+        path="/pengaturan"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Settings />
+            </AppLayout>
+          </ProtectedRoute>
         }
       />
 

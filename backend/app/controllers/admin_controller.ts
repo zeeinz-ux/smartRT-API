@@ -2,6 +2,8 @@ import { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import User from '#models/user'
 import WargaProfile from '#models/warga_profile'
+import IuranSampah from '#models/iuran_sampah'
+import IuranQurban from '#models/iuran_qurban'
 import db from '@adonisjs/lucid/services/db'
 import GoogleSheetsService from '#services/google_sheets'
 
@@ -13,24 +15,25 @@ export default class AdminController {
   async listWarga({ request, auth, response }: HttpContext) {
     try {
       const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
+      if (!admin || (admin.role !== 'admin' && admin.role !== 'bendahara')) {
         return response.status(403).json({
           success: false,
-          message: 'Akses ditolak. Hanya admin yang bisa mengakses.',
+          message: 'Akses ditolak.',
         })
       }
 
-      const { search, status, verification_status, status_huni, page = 1, limit = 10 } = request.qs()
+      const { search, status, verification_status, status_huni, role, page = 1, limit = 10 } = request.qs()
 
-      let query = db.from('warga_profiles')
-        .join('users', 'warga_profiles.user_id', 'users.id')
+      let query = db.from('users')
+        .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
         .select(
-          'warga_profiles.id',
-          'warga_profiles.user_id',
+          'users.id as user_id',
           'users.nama',
           'users.email',
           'users.no_hp',
+          'users.role',
           'users.status as user_status',
+          'warga_profiles.id as profile_id',
           'warga_profiles.nik',
           'warga_profiles.kk',
           'warga_profiles.alamat',
@@ -40,17 +43,21 @@ export default class AdminController {
           'warga_profiles.verification_status',
           'warga_profiles.verified_at',
           'warga_profiles.rejection_reason',
-          'warga_profiles.created_at',
-          'warga_profiles.updated_at'
+          'users.created_at',
+          'users.updated_at'
         )
-        .where('users.role', 'warga')
+        .whereNot('users.role', 'admin')
+
+      if (role) {
+        query = query.where('users.role', role)
+      }
 
       if (search) {
         query = query.where((builder) => {
           builder
             .whereILike('users.nama', `%${search}%`)
             .orWhereILike('users.email', `%${search}%`)
-            .orWhere('warga_profiles.nik', 'like', `%${search}%`)
+            .orWhereILike('warga_profiles.nik', `%${search}%`)
         })
       }
 
@@ -66,19 +73,19 @@ export default class AdminController {
         query = query.where('warga_profiles.status_huni', status_huni)
       }
 
-      query = query.orderBy('warga_profiles.created_at', 'desc')
+      query = query.orderBy('users.created_at', 'desc')
 
-      // ✅ FIX: Count pakai separate query tanpa select columns
-      let countQuery = db.from('warga_profiles')
-        .join('users', 'warga_profiles.user_id', 'users.id')
-        .where('users.role', 'warga')
-      
+      let countQuery = db.from('users')
+        .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
+        .whereNot('users.role', 'admin')
+
+      if (role) countQuery = countQuery.where('users.role', role)
       if (search) {
         countQuery = countQuery.where((builder) => {
           builder
             .whereILike('users.nama', `%${search}%`)
             .orWhereILike('users.email', `%${search}%`)
-            .orWhere('warga_profiles.nik', 'like', `%${search}%`)
+            .orWhereILike('warga_profiles.nik', `%${search}%`)
         })
       }
       if (status) countQuery = countQuery.where('users.status', status)
@@ -123,17 +130,29 @@ export default class AdminController {
         })
       }
 
-      const warga = await db.from('warga_profiles')
-        .join('users', 'warga_profiles.user_id', 'users.id')
+      const warga = await db.from('users')
+        .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
         .select(
-          'warga_profiles.*',
+          'users.id as user_id',
           'users.nama',
           'users.email',
           'users.no_hp',
+          'users.role',
           'users.status as user_status',
-          'users.foto_url'
+          'users.foto_url',
+          'warga_profiles.id as profile_id',
+          'warga_profiles.nik',
+          'warga_profiles.kk',
+          'warga_profiles.alamat',
+          'warga_profiles.no_rumah',
+          'warga_profiles.status_huni',
+          'warga_profiles.foto_ktp_url',
+          'warga_profiles.verification_status',
+          'warga_profiles.verified_at',
+          'warga_profiles.rejection_reason',
+          'warga_profiles.created_at as profile_created_at',
         )
-        .where('warga_profiles.id', params.id)
+        .where('users.id', params.id)
         .first()
 
       if (!warga) {
@@ -181,8 +200,7 @@ export default class AdminController {
       await user.save()
 
       try {
-        await GoogleSheetsService.appendWarga({
-          id: profile.id,
+        await GoogleSheetsService.updateWarga(user.id, {
           nama: user.nama,
           email: user.email,
           no_hp: user.no_hp,
@@ -264,7 +282,7 @@ export default class AdminController {
 
   /**
    * POST /api/admin/warga
-   * Tambah warga manual oleh admin + sync ke Google Sheets
+   * Tambah akun warga basic oleh admin. Warga lanjut onboarding isi profil sendiri.
    */
   async createWarga({ request, auth, response }: HttpContext) {
     try {
@@ -276,50 +294,36 @@ export default class AdminController {
         })
       }
 
-      const {
-        nama,
-        email,
-        no_hp,
-        password,
-        nik,
-        kk,
-        alamat,
-        no_rumah,
-        status_huni,
-      } = request.only([
+      const { nama, email, no_hp, password, role } = request.only([
         'nama',
         'email',
         'no_hp',
         'password',
-        'nik',
-        'kk',
-        'alamat',
-        'no_rumah',
-        'status_huni',
+        'role',
       ])
 
-      // ✅ FIX: Trim & clean NIK/KK
-      const cleanNik = (nik || '').toString().trim()
-      const cleanKk = (kk || '').toString().trim()
-
-      if (!nama || !email || !password || !cleanNik || !cleanKk) {
+      if (!nama || !email || !password || !no_hp) {
         return response.status(400).json({
           success: false,
-          message: 'Nama, email, password, NIK, dan KK wajib diisi',
+          message: 'Nama, email, no. HP, dan password wajib diisi',
         })
       }
 
-      if (!/^\d{16}$/.test(cleanNik)) {
-        return response.status(400).json({
+      const validRoles = ['warga', 'bendahara', 'admin']
+      const selectedRole = role && validRoles.includes(role) ? role : 'warga'
+
+      if (selectedRole === 'admin' && admin.role !== 'admin') {
+        return response.status(403).json({
           success: false,
-          message: `NIK harus 16 digit angka (diterima: ${cleanNik.length} digit)`,
+          message: 'Hanya admin utama yang bisa membuat akun admin',
         })
       }
 
-      if (!/^\d{16}$/.test(cleanKk)) {
+      const cleanNoHp = (no_hp || '').toString().trim()
+      if (!/^\d{10,15}$/.test(cleanNoHp.replace(/\D/g, ''))) {
         return response.status(400).json({
           success: false,
-          message: 'KK harus 16 digit angka',
+          message: 'Nomor HP tidak valid',
         })
       }
 
@@ -331,49 +335,30 @@ export default class AdminController {
         })
       }
 
-      const existingNik = await WargaProfile.findBy('nik', cleanNik)
-      if (existingNik) {
-        return response.status(409).json({
-          success: false,
-          message: 'NIK sudah terdaftar',
-        })
-      }
-
+      const isWarga = selectedRole === 'warga'
       const user = await User.create({
         email: email.toLowerCase(),
         password_hash: password,
         nama,
-        no_hp,
-        role: 'warga',
-        status: 'active',
-      })
-
-      const profile = await WargaProfile.create({
-        user_id: user.id,
-        nik: cleanNik,
-        kk: cleanKk,
-        alamat,
-        no_rumah,
-        status_huni,
-        verification_status: 'verified',
-        verified_at: DateTime.now(),
-        verified_by: admin.id,
+        no_hp: cleanNoHp,
+        role: selectedRole,
+        status: isWarga ? 'pending' : 'active',
       })
 
       try {
         await GoogleSheetsService.appendWarga({
-          id: profile.id,
+          id: user.id,
           nama: user.nama,
           email: user.email,
           no_hp: user.no_hp,
-          nik: profile.nik,
-          kk: profile.kk,
-          alamat: profile.alamat,
-          no_rumah: profile.no_rumah,
-          status_huni: profile.status_huni,
-          verification_status: profile.verification_status,
-          verified_at: profile.verified_at?.toISO() || null,
-          verified_by: profile.verified_by,
+          nik: null,
+          kk: null,
+          alamat: null,
+          no_rumah: null,
+          status_huni: null,
+          verification_status: 'pending',
+          verified_at: null,
+          verified_by: null,
         })
       } catch (sheetError) {
         console.error('Google Sheets sync error (non-critical):', sheetError)
@@ -381,12 +366,14 @@ export default class AdminController {
 
       return response.status(201).json({
         success: true,
-        message: 'Warga berhasil ditambahkan',
+        message: isWarga
+          ? 'Akun warga berhasil dibuat. Warga harus login dan mengisi profil untuk mengaktifkan akun.'
+          : `Akun ${selectedRole} berhasil dibuat.`,
         data: {
           user_id: user.id,
-          profile_id: profile.id,
           nama: user.nama,
           email: user.email,
+          role: selectedRole,
         },
       })
     } catch (error) {
@@ -412,8 +399,8 @@ export default class AdminController {
         })
       }
 
-      const profile = await WargaProfile.findOrFail(params.id)
-      const user = await User.findOrFail(profile.user_id)
+      const user = await User.findOrFail(params.id)
+      const profile = await WargaProfile.findBy('user_id', user.id)
 
       const {
         nama,
@@ -436,18 +423,22 @@ export default class AdminController {
       if (user_status) user.status = user_status
       await user.save()
 
-      if (alamat) profile.alamat = alamat
-      if (no_rumah) profile.no_rumah = no_rumah
-      if (status_huni) profile.status_huni = status_huni
-      await profile.save()
+      if (profile) {
+        if (alamat) profile.alamat = alamat
+        if (no_rumah) profile.no_rumah = no_rumah
+        if (status_huni) profile.status_huni = status_huni
+        await profile.save()
+      }
 
       try {
-        await GoogleSheetsService.updateWarga(profile.id, {
+        await GoogleSheetsService.updateWarga(user.id, {
           nama: nama || undefined,
           no_hp: no_hp || undefined,
-          alamat: alamat || undefined,
-          no_rumah: no_rumah || undefined,
-          status_huni: status_huni || undefined,
+          ...(profile ? {
+            alamat: alamat || undefined,
+            no_rumah: no_rumah || undefined,
+            status_huni: status_huni || undefined,
+          } : {}),
         })
       } catch (sheetError) {
         console.error('Google Sheets update error (non-critical):', sheetError)
@@ -457,7 +448,7 @@ export default class AdminController {
         success: true,
         message: 'Data warga berhasil diupdate',
         data: {
-          id: profile.id,
+          id: user.id,
           nama: user.nama,
         },
       })
@@ -472,6 +463,7 @@ export default class AdminController {
 
   /**
    * DELETE /api/admin/warga/:id
+   * Hard delete — hapus permanen user + profile dari database
    */
   async deleteWarga({ params, auth, response }: HttpContext) {
     try {
@@ -483,16 +475,69 @@ export default class AdminController {
         })
       }
 
-      const profile = await WargaProfile.findOrFail(params.id)
-      const user = await User.findOrFail(profile.user_id)
+      const user = await User.findOrFail(params.id)
+      const nama = user.nama
+
+      // Hapus iuran sampah terkait
+      await IuranSampah.query().where('warga_id', user.id).delete()
+
+      // Hapus iuran qurban terkait
+      await IuranQurban.query().where('warga_id', user.id).delete()
+
+      // Hapus profile jika ada
+      const profile = await WargaProfile.findBy('user_id', user.id)
+      if (profile) {
+        await profile.delete()
+      }
+
+      try {
+        await GoogleSheetsService.deleteWarga(user.id)
+      } catch (sheetError) {
+        console.error('Google Sheets delete error (non-critical):', sheetError)
+      }
+
+      // Hapus user
+      await user.delete()
+
+      return response.json({
+        success: true,
+        message: `Warga ${nama} berhasil dihapus permanen`,
+      })
+    } catch (error) {
+      console.error('Delete warga error:', error)
+      return response.status(500).json({
+        success: false,
+        message: 'Terjadi kesalahan saat menghapus warga',
+      })
+    }
+  }
+
+  /**
+   * POST /api/admin/warga/:id/deactivate
+   * Soft deactivate — nonaktifkan akun tanpa hapus data
+   */
+  async deactivateWarga({ params, auth, response }: HttpContext) {
+    try {
+      const admin = auth.user
+      if (!admin || admin.role !== 'admin') {
+        return response.status(403).json({
+          success: false,
+          message: 'Akses ditolak.',
+        })
+      }
+
+      const user = await User.findOrFail(params.id)
 
       user.status = 'suspended'
       await user.save()
 
-      try {
-        await GoogleSheetsService.deleteWarga(profile.id)
-      } catch (sheetError) {
-        console.error('Google Sheets delete error (non-critical):', sheetError)
+      const profile = await WargaProfile.findBy('user_id', user.id)
+      if (profile) {
+        try {
+          await GoogleSheetsService.deleteWarga(user.id)
+        } catch (sheetError) {
+          console.error('Google Sheets sync error (non-critical):', sheetError)
+        }
       }
 
       return response.json({
@@ -500,10 +545,10 @@ export default class AdminController {
         message: `Warga ${user.nama} berhasil dinonaktifkan`,
       })
     } catch (error) {
-      console.error('Delete warga error:', error)
+      console.error('Deactivate warga error:', error)
       return response.status(500).json({
         success: false,
-        message: 'Terjadi kesalahan saat menghapus warga',
+        message: 'Terjadi kesalahan saat menonaktifkan warga',
       })
     }
   }
@@ -521,18 +566,17 @@ export default class AdminController {
         })
       }
 
-      const [totalWargaRow] = await db.rawQuery(
-        `SELECT COUNT(*) as total FROM users WHERE role = 'warga'`
-      )
-      const [wargaPendingRow] = await db.rawQuery(
-        `SELECT COUNT(*) as total FROM warga_profiles WHERE verification_status = 'pending'`
-      )
-      const [wargaVerifiedRow] = await db.rawQuery(
-        `SELECT COUNT(*) as total FROM warga_profiles WHERE verification_status = 'verified'`
-      )
-      const [wargaRejectedRow] = await db.rawQuery(
-        `SELECT COUNT(*) as total FROM warga_profiles WHERE verification_status = 'rejected'`
-      )
+      const [{ total: totalWarga }] = await db.from('users').where('role', 'warga').count('* as total')
+      const [{ total: wargaPending }] = await db.from('warga_profiles').where('verification_status', 'pending').count('* as total')
+      const [{ total: wargaVerified }] = await db.from('warga_profiles').where('verification_status', 'verified').count('* as total')
+      const [{ total: wargaRejected }] = await db.from('warga_profiles').where('verification_status', 'rejected').count('* as total')
+
+      // Warga yang belum onboarding (ada di users tapi belum punya profile)
+      const [{ total: wargaNonOnboarded }] = await db.from('users')
+        .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
+        .where('users.role', 'warga')
+        .whereNull('warga_profiles.id')
+        .count('* as total')
 
       const recentPending = await db.from('warga_profiles')
         .join('users', 'warga_profiles.user_id', 'users.id')
@@ -541,15 +585,26 @@ export default class AdminController {
         .orderBy('warga_profiles.created_at', 'desc')
         .limit(5)
 
+      // Warga belum onboarding — terbaru
+      const recentNonOnboarded = await db.from('users')
+        .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
+        .select('users.id', 'users.nama', 'users.email', 'users.created_at')
+        .where('users.role', 'warga')
+        .whereNull('warga_profiles.id')
+        .orderBy('users.created_at', 'desc')
+        .limit(5)
+
       return response.json({
         success: true,
         stats: {
-          totalWarga: Number(totalWargaRow?.total || 0),
-          wargaPending: Number(wargaPendingRow?.total || 0),
-          wargaVerified: Number(wargaVerifiedRow?.total || 0),
-          wargaRejected: Number(wargaRejectedRow?.total || 0),
+          totalWarga: Number(totalWarga || 0),
+          wargaPending: Number(wargaPending || 0),
+          wargaVerified: Number(wargaVerified || 0),
+          wargaRejected: Number(wargaRejected || 0),
+          wargaNonOnboarded: Number(wargaNonOnboarded || 0),
         },
         recentPending,
+        recentNonOnboarded,
       })
     } catch (error) {
       console.error('Dashboard error:', error)

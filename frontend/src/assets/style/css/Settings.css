@@ -1,0 +1,189 @@
+.set-panel {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.set-toast {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: set-toast-in 0.3s ease;
+}
+@keyframes set-toast-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.set-toast--success { background: var(--clr-primary, #4a8c5c); }
+.set-toast--error { background: var(--clr-danger, #dc2626); }
+
+.set-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--clr-primary, #4a8c5c);
+}
+.set-header__title {
+  font-family: var(--font-heading, "DM Serif Display", serif);
+  font-size: 1.35rem;
+  color: var(--clr-title, #1a3a26);
+  margin: 0;
+}
+.set-header__sub {
+  font-size: 0.85rem;
+  color: var(--clr-muted, #8aaa94);
+  margin: 2px 0 0;
+}
+
+.set-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  background: var(--clr-card-bg, white);
+  border-radius: var(--radius-xl, 16px);
+  padding: var(--space-xl);
+  border: 1px solid var(--clr-border-light, #e5e7eb);
+  box-shadow: var(--shadow-sm);
+}
+
+.set-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.set-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--clr-text-primary, #1f2937);
+}
+
+.set-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.set-input {
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  border: 1.5px solid var(--clr-border, #d1d5db);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-family: var(--font-body, "DM Sans", sans-serif);
+  outline: none;
+  color: var(--clr-text-primary, #1f2937);
+  background: var(--clr-bg-card, white);
+  transition: border-color 0.15s ease;
+}
+.set-input:focus {
+  border-color: var(--clr-primary, #4a8c5c);
+}
+.set-input--error {
+  border-color: var(--clr-danger, #dc2626) !important;
+}
+.set-input--ok {
+  border-color: var(--clr-primary, #4a8c5c) !important;
+}
+.set-input::placeholder {
+  color: var(--clr-text-muted, #9ca3af);
+  font-size: 0.8rem;
+}
+.set-eye {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--clr-text-muted, #9ca3af);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+.set-eye:hover {
+  color: var(--clr-text-primary, #1f2937);
+}
+
+/* ── Rules checklist ── */
+.set-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.set-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.set-rule--ok {
+  background: #d4eddc;
+  color: #2d6644;
+}
+.set-rule--fail {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ── Hints ── */
+.set-hint {
+  font-size: 0.75rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
+.set-hint--ok {
+  color: var(--clr-primary-dark, #2d6644);
+}
+.set-hint--error {
+  color: var(--clr-danger, #dc2626);
+}
+
+.set-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  background: var(--clr-primary, #4a8c5c);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body, "DM Sans", sans-serif);
+  transition: background 0.15s ease;
+  margin-top: var(--space-xs);
+}
+.set-submit:hover:not(:disabled) {
+  background: var(--clr-primary-dark, #2d6644);
+}
+.set-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.set-spin {
+  animation: set-spin 1s linear infinite;
+}
+@keyframes set-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+  .set-panel { padding: var(--space-md); }
+}

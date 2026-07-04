@@ -19,14 +19,28 @@ const API_BASE_URL = import.meta.env.DEV ? "http://localhost:3333" : "";
 export default function Login() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem('rememberedEmail') || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
+  const [rememberMe, setRememberMe] = useState(!!localStorage.getItem('rememberedEmail'));
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState(null);
+
+  // Baca error dari query string (Google OAuth callback) — pake lazy initializer biar kebaca sebelum StrictMode double-mount
+  const [error, setError] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    const e = p.get("error");
+    if (e === "email_not_registered") return "Email akun belum terdaftar, silahkan hubungi admin.";
+    if (e === "access_denied") return "Login Google dibatalkan.";
+    if (e === "server_error") return "Terjadi kesalahan server. Coba lagi.";
+    return null;
+  });
+
   const [leaves, setLeaves] = useState([]);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [roleChecked, setRoleChecked] = useState(false);
+  const [checkingRole, setCheckingRole] = useState(false);
+  const [roleNotFound, setRoleNotFound] = useState(false);
 
   useEffect(() => {
     const generated = Array.from({ length: 12 }, (_, i) => ({
@@ -41,9 +55,58 @@ export default function Login() {
     setLeaves(generated);
   }, []);
 
+  // Bersihin query string dari URL setelah render (biar gak ganggu lazy initializer error)
+  useEffect(() => {
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  // ── Debounced check role saat email berubah ──
+  useEffect(() => {
+    if (!email || email.length < 5) {
+      setRoleChecked(false)
+      setSelectedRole(null)
+      setRoleNotFound(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingRole(true)
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/check-role?email=${encodeURIComponent(email)}`, {
+          credentials: "include",
+        })
+        const data = await res.json()
+        if (data.success && data.exists) {
+          setSelectedRole(data.role)
+          setRoleChecked(true)
+          setRoleNotFound(false)
+        } else {
+          setSelectedRole(null)
+          setRoleChecked(false)
+          setRoleNotFound(true)
+        }
+      } catch {
+        setRoleChecked(false)
+        setRoleNotFound(false)
+      } finally {
+        setCheckingRole(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [email])
+
+  const roleLabels = {
+    admin: "Admin RT",
+    bendahara: "Bendahara",
+    warga: "Warga",
+  }
+
   async function handleEmailLogin(e) {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!email || !password || !selectedRole) return;
     setLoading(true);
     setError(null);
 
@@ -51,7 +114,7 @@ export default function Login() {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, stayLoggedIn: keepLoggedIn }),
+        body: JSON.stringify({ email, password, role: selectedRole }),
         credentials: "include",
       });
 
@@ -89,6 +152,25 @@ export default function Login() {
       setLoading(false);
     }
   }
+
+  function handleRememberToggle() {
+    setRememberMe((v) => {
+      const next = !v
+      if (next) {
+        localStorage.setItem('rememberedEmail', email)
+      } else {
+        localStorage.removeItem('rememberedEmail')
+      }
+      return next
+    })
+  }
+
+  // Simpan email kalo rememberMe diaktifkan
+  useEffect(() => {
+    if (rememberMe && email) {
+      localStorage.setItem('rememberedEmail', email)
+    }
+  }, [email, rememberMe])
 
   function handleHubungiAdmin() {
     const message =
@@ -239,17 +321,43 @@ export default function Login() {
             </button>
           </div>
 
+          <div className="ms-field">
+            <div className="ms-role-wrapper">
+              <select
+                className={`ms-input ms-role-select ${roleChecked ? "ms-role--found" : ""} ${roleNotFound ? "ms-role--notfound" : ""}`}
+                value={selectedRole || ""}
+                disabled={!roleChecked || checkingRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+              >
+                {!roleChecked && (
+                  <option value="">
+                    {checkingRole ? "Memeriksa..." : "Masukkan email terlebih dahulu"}
+                  </option>
+                )}
+                {roleNotFound && (
+                  <option value="">Email tidak terdaftar</option>
+                )}
+                {roleChecked && selectedRole && (
+                  <option value={selectedRole}>
+                    {roleLabels[selectedRole] || selectedRole}
+                  </option>
+                )}
+              </select>
+              {checkingRole && <span className="ms-role-spinner" />}
+            </div>
+          </div>
+
           <div className="ms-row">
             <label className="ms-checkbox-label">
               <span
-                className={`ms-checkbox ${keepLoggedIn ? "ms-checkbox--checked" : ""}`}
-                onClick={() => setKeepLoggedIn((v) => !v)}
+                className={`ms-checkbox ${rememberMe ? "ms-checkbox--checked" : ""}`}
+                onClick={handleRememberToggle}
                 role="checkbox"
-                aria-checked={keepLoggedIn}
+                aria-checked={rememberMe}
                 tabIndex={0}
-                onKeyDown={(e) => e.key === " " && setKeepLoggedIn((v) => !v)}
+                onKeyDown={(e) => e.key === " " && handleRememberToggle()}
               >
-                {keepLoggedIn && (
+                {rememberMe && (
                   <svg width="10" height="10" viewBox="0 0 10 10">
                     <path
                       d="M2 5L4 7L8 3"
@@ -261,7 +369,7 @@ export default function Login() {
                   </svg>
                 )}
               </span>
-              Tetap masuk
+              Ingat Saya
             </label>
             <a href="/auth/forgot-password" className="ms-link">
               Lupa password?
@@ -271,7 +379,7 @@ export default function Login() {
           <button
             type="submit"
             className="ms-btn-primary"
-            disabled={loading || !email || !password}
+            disabled={loading || !email || !password || !selectedRole}
           >
             {loading ? <span className="ms-spinner" /> : "Masuk ke Portal"}
           </button>

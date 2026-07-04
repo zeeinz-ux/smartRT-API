@@ -4,49 +4,87 @@ import { Navigate, useLocation } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
 
+// Cache auth di module level biar gak fetch ulang tiap ganti route
+let cachedUser = null;
+let cachedRequiresOnboarding = false;
+let fetchPromise = null;
+
+export function getCachedUser() {
+  return cachedUser;
+}
+
+export function clearAuthCache() {
+  cachedUser = null;
+  cachedRequiresOnboarding = false;
+  fetchPromise = null;
+}
+
+async function fetchAuth() {
+  if (fetchPromise) return fetchPromise;
+  fetchPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        credentials: "include",
+      });
+      if (!res.ok) { clearAuthCache(); return null; }
+      const data = await res.json();
+      cachedUser = data.user;
+      cachedRequiresOnboarding = data.requiresOnboarding || false;
+      return data;
+    } catch {
+      clearAuthCache();
+      return null;
+    }
+  })();
+  return fetchPromise;
+}
+
 export default function ProtectedRoute({ children, allowedRoles }) {
   const location = useLocation();
-  const [status, setStatus] = useState("loading");
-  const [user, setUser] = useState(null);
-  const [requiresOnboarding, setRequiresOnboarding] = useState(false);
+  const [status, setStatus] = useState(() => {
+    if (cachedUser) return "ok";
+    return "loading";
+  });
+  const [user, setUser] = useState(cachedUser);
+  const [requiresOnboarding, setRequiresOnboarding] = useState(cachedRequiresOnboarding);
 
   useEffect(() => {
     let cancelled = false;
 
     async function checkAuth() {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
-          credentials: "include",
-        });
+      const data = await fetchAuth();
+      if (cancelled) return;
 
-        if (!res.ok) {
-          if (!cancelled) setStatus("unauthorized");
-          return;
-        }
+      if (!cachedUser) {
+        setStatus("unauthorized");
+        return;
+      }
 
-        const data = await res.json();
-        const currentUser = data.user;
+      setUser(cachedUser);
+      setRequiresOnboarding(cachedRequiresOnboarding);
 
-        if (!cancelled) {
-          setUser(currentUser);
-          setRequiresOnboarding(data.requiresOnboarding || false);
-
-          // Cek role jika allowedRoles diisi
-          if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-            setStatus("forbidden");
-          } else {
-            setStatus("ok");
-          }
-        }
-      } catch {
-        if (!cancelled) setStatus("unauthorized");
+      // Admin super user — bisa akses semuanya
+      if (allowedRoles && cachedUser.role !== "admin" && !allowedRoles.includes(cachedUser.role)) {
+        setStatus("forbidden");
+      } else {
+        setStatus("ok");
       }
     }
 
-    checkAuth();
-    return () => {
-      cancelled = true;
-    };
+    if (!cachedUser) {
+      checkAuth();
+    } else {
+      // Refresh di background — kalau session expired (clearAuthCache dipanggil), redirect
+      fetchAuth().then((data) => {
+        if (cancelled) return;
+        if (!data) { setStatus("unauthorized"); return; }
+        if (allowedRoles && cachedUser.role !== "admin" && !allowedRoles.includes(cachedUser.role)) {
+          setStatus("forbidden");
+        }
+      });
+    }
+
+    return () => { cancelled = true; };
   }, [allowedRoles]);
 
   if (status === "loading") {

@@ -1072,6 +1072,12 @@
 }
 
 /* ── Responsive ── */
+@media (max-width: 768px) {
+  .obf-header__title {
+    font-size: 1.35rem;
+  }
+}
+
 @media (max-width: 480px) {
   .obf-card {
     padding: 24px 20px 20px;
@@ -1120,6 +1126,78 @@
   .obf-review-label {
     min-width: 80px;
   }
+
+  .obf-header__logo svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .obf-header__sub {
+    font-size: 0.7rem;
+  }
+
+  .obf-step-title {
+    font-size: 1.05rem;
+  }
+
+  .obf-input,
+  .obf-textarea,
+  .obf-select {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+
+  .obf-success__title {
+    font-size: 1.35rem;
+  }
+
+  .obf-success__body {
+    font-size: 0.82rem;
+  }
+
+  .obf-ktp-meta {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .obf-ktp-meta__info {
+    width: 100%;
+  }
+
+  .obf-ktp-remove {
+    align-self: flex-end;
+  }
+
+  .obf-info-box {
+    padding: 10px 12px;
+  }
+
+  .obf-tips {
+    padding: 10px 12px;
+  }
+
+  .obf-review-ktp-thumb {
+    width: 80px;
+    height: 50px;
+  }
+
+  .obf-nav {
+    flex-direction: column;
+  }
+
+  .obf-nav button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .obf-btn--ghost {
+    order: 2;
+  }
+
+  .obf-btn--primary {
+    order: 1;
+  }
 }
 
 @media (max-width: 380px) {
@@ -1134,5 +1212,29 @@
   .obf-step__bubble {
     width: 28px;
     height: 28px;
+  }
+
+  .obf-step__connector {
+    left: calc(50% + 14px);
+    right: calc(-50% + 14px);
+  }
+
+  .obf-card {
+    padding: 20px 16px 16px;
+    border-radius: 16px;
+  }
+
+  .obf-header {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .obf-review-label {
+    min-width: 60px;
+    font-size: 0.65rem;
+  }
+
+  .obf-review-value {
+    font-size: 0.78rem;
   }
 }

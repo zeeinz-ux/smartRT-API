@@ -1,9 +1,10 @@
 import { DateTime } from 'luxon'
 import hash from '@adonisjs/core/services/hash'
-import { BaseModel, column, hasOne } from '@adonisjs/lucid/orm'
-import { beforeSave } from '@adonisjs/lucid/orm'  // ✅ TAMBAH INI
-import type { HasOne } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, hasOne, hasMany } from '@adonisjs/lucid/orm'
+import { beforeSave } from '@adonisjs/lucid/orm'
+import type { HasOne, HasMany } from '@adonisjs/lucid/types/relations'
 import WargaProfile from './warga_profile.ts'
+import IuranSampah from './iuran_sampah.ts'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
@@ -45,6 +46,11 @@ export default class User extends BaseModel {
   })
   declare wargaProfile: HasOne<typeof WargaProfile>
 
+  @hasMany(() => IuranSampah, {
+    foreignKey: 'warga_id',
+  })
+  declare iuranSampah: HasMany<typeof IuranSampah>
+
   // ✅ FIX: Tambah @beforeSave decorator
   @beforeSave()
   static async hashPassword(user: User) {
@@ -55,9 +61,14 @@ export default class User extends BaseModel {
 
   /**
    * Verifikasi password plain text dengan hash
+   * Default pakai argon2, fallback scrypt untuk hash lama
    */
   async verifyPassword(password: string): Promise<boolean> {
     if (!this.password_hash) return false
-    return hash.verify(this.password_hash, password)
+    if (await hash.verify(this.password_hash, password)) return true
+    if (this.password_hash.startsWith('$scrypt$')) {
+      return hash.use('scrypt').verify(this.password_hash, password)
+    }
+    return false
   }
 }

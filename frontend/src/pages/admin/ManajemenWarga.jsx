@@ -40,6 +40,7 @@ export default function ManajemenWarga() {
     verification_status: "",
     status_huni: "",
     user_status: "",
+    role: "",
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -62,11 +63,7 @@ export default function ManajemenWarga() {
     email: "",
     no_hp: "",
     password: "",
-    nik: "",
-    kk: "",
-    alamat: "",
-    no_rumah: "",
-    status_huni: "pemilik",
+    role: "warga",
   });
 
   const [editForm, setEditForm] = useState({
@@ -223,18 +220,11 @@ export default function ManajemenWarga() {
     setActionLoading(true);
 
     try {
-      // ✅ FIX: Trim NIK dan KK sebelum kirim
-      const payload = {
-        ...addForm,
-        nik: addForm.nik.toString().trim(),
-        kk: addForm.kk.toString().trim(),
-      };
-
       const res = await fetch(`${API_BASE_URL}/api/admin/warga`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(addForm),
       });
 
       const data = await res.json();
@@ -246,11 +236,7 @@ export default function ManajemenWarga() {
           email: "",
           no_hp: "",
           password: "",
-          nik: "",
-          kk: "",
-          alamat: "",
-          no_rumah: "",
-          status_huni: "pemilik",
+          role: "warga",
         });
         fetchWarga();
       } else {
@@ -269,7 +255,7 @@ export default function ManajemenWarga() {
     setActionLoading(true);
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/admin/warga/${selectedWarga.id}`,
+        `${API_BASE_URL}/api/admin/warga/${selectedWarga.user_id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -283,7 +269,7 @@ export default function ManajemenWarga() {
         setShowEditModal(false);
         fetchWarga();
         if (showDetailModal) {
-          handleViewDetail(selectedWarga.id);
+          handleViewDetail(selectedWarga.user_id);
         }
       } else {
         showToast(data.message, "error");
@@ -295,12 +281,35 @@ export default function ManajemenWarga() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Yakin ingin menonaktifkan warga ini?")) return;
+  const handleHardDelete = async (id) => {
+    if (!confirm("Yakin ingin menghapus warga ini PERMANEN? Semua data termasuk histori pembayaran akan hilang. Tindakan ini tidak bisa dibatalkan!")) return;
     setActionLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/warga/${id}`, {
         method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message);
+        fetchWarga();
+        if (showDetailModal) setShowDetailModal(false);
+      } else {
+        showToast(data.message, "error");
+      }
+    } catch {
+      showToast("Gagal menghapus warga", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeactivate = async (id) => {
+    if (!confirm("Yakin ingin menonaktifkan akun warga ini? Data tetap tersimpan tapi warga tidak bisa login.")) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/warga/${id}/deactivate`, {
+        method: "POST",
         credentials: "include",
       });
       const data = await res.json();
@@ -457,6 +466,21 @@ export default function ManajemenWarga() {
             </select>
           </div>
 
+          <div className="mw-filter">
+            <Users size={16} />
+            <select
+              value={filters.role}
+              onChange={(e) =>
+                handleFilterChange("role", e.target.value)
+              }
+            >
+              <option value="">Semua Role</option>
+              <option value="warga">Warga</option>
+              <option value="bendahara">Bendahara</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           <button className="btn-refresh" onClick={fetchWarga} title="Refresh">
             <RefreshCw size={16} />
           </button>
@@ -481,22 +505,28 @@ export default function ManajemenWarga() {
             <div className="mw-table-wrapper">
               <table className="mw-table">
                 <thead>
-                  <tr>
-                    <th>Warga</th>
-                    <th>NIK</th>
-                    <th>Alamat</th>
-                    <th>Status Huni</th>
-                    <th>Verifikasi</th>
-                    <th>Status Akun</th>
-                    <th>Tanggal Daftar</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {wargaList.map((warga) => (
+                    <tr>
+                      <th>Nama / Email</th>
+                      <th>Role</th>
+                      <th>NIK</th>
+                      <th>Alamat</th>
+                      <th>Status Akun</th>
+                      <th>Verifikasi</th>
+                      <th>Tanggal Daftar</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {wargaList.map((warga) => {
+                      const isOnboarded = !!warga.profile_id
+                      const rowClass = isOnboarded
+                        ? `mw-table__row--${warga.verification_status || 'none'}`
+                        : 'mw-table__row--pending'
+
+                      return (
                     <tr
-                      key={warga.id}
-                      className={`mw-table__row mw-table__row--${warga.verification_status}`}
+                      key={warga.user_id}
+                      className={`mw-table__row ${rowClass}`}
                     >
                       <td>
                         <div className="mw-warga-cell">
@@ -513,14 +543,21 @@ export default function ManajemenWarga() {
                           </div>
                         </div>
                       </td>
-                      <td className="mw-table__nik">{warga.nik || "-"}</td>
-                      <td className="mw-table__alamat">
-                        {warga.alamat || "-"}{" "}
-                        {warga.no_rumah && `(No. ${warga.no_rumah})`}
+                      <td>{getStatusBadge(warga.role)}</td>
+                      <td className="mw-table__nik">
+                        {isOnboarded ? warga.nik : (
+                          <span className="mw-pending-label">Menunggu onboarding</span>
+                        )}
                       </td>
-                      <td>{getStatusBadge(warga.status_huni)}</td>
-                      <td>{getStatusBadge(warga.verification_status)}</td>
+                      <td className="mw-table__alamat">
+                        {isOnboarded ? `${warga.alamat || '-'}${warga.no_rumah ? ` (No. ${warga.no_rumah})` : ''}` : '-'}
+                      </td>
                       <td>{getStatusBadge(warga.user_status)}</td>
+                      <td>
+                        {isOnboarded ? getStatusBadge(warga.verification_status) : (
+                          <span className="mw-pending-label">Belum isi data</span>
+                        )}
+                      </td>
                       <td className="mw-table__date">
                         {formatDate(warga.created_at)}
                       </td>
@@ -528,16 +565,16 @@ export default function ManajemenWarga() {
                         <div className="mw-actions">
                           <button
                             className="mw-action-btn mw-action-btn--view"
-                            onClick={() => handleViewDetail(warga.id)}
+                            onClick={() => handleViewDetail(warga.user_id)}
                             title="Lihat Detail"
                           >
                             <Eye size={16} />
                           </button>
-                          {warga.verification_status === "pending" && (
+                          {isOnboarded && warga.verification_status === "pending" && (
                             <>
                               <button
                                 className="mw-action-btn mw-action-btn--approve"
-                                onClick={() => handleVerify(warga.id)}
+                                onClick={() => handleVerify(warga.profile_id)}
                                 disabled={actionLoading}
                                 title="Verifikasi"
                               >
@@ -553,25 +590,37 @@ export default function ManajemenWarga() {
                               </button>
                             </>
                           )}
-                          <button
-                            className="mw-action-btn mw-action-btn--edit"
-                            onClick={() => openEditModal(warga)}
-                            title="Edit"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-                          <button
-                            className="mw-action-btn mw-action-btn--delete"
-                            onClick={() => handleDelete(warga.id)}
-                            disabled={actionLoading}
-                            title="Nonaktifkan"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {isOnboarded && (
+                            <button
+                              className="mw-action-btn mw-action-btn--edit"
+                              onClick={() => openEditModal(warga)}
+                              title="Edit"
+                            >
+                              <Edit3 size={16} />
+                            </button>
+                          )}
+                          <div className="mw-actions-group">
+                            <button
+                              className="mw-action-btn mw-action-btn--deactivate"
+                              onClick={() => handleDeactivate(warga.user_id)}
+                              disabled={actionLoading}
+                              title="Nonaktifkan"
+                            >
+                              <UserX size={16} />
+                            </button>
+                            <button
+                              className="mw-action-btn mw-action-btn--delete"
+                              onClick={() => handleHardDelete(warga.user_id)}
+                              disabled={actionLoading}
+                              title="Hapus permanen"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )})}
                 </tbody>
               </table>
             </div>
@@ -777,13 +826,14 @@ export default function ManajemenWarga() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>No. HP</label>
+                  <label>No. HP *</label>
                   <input
                     type="tel"
                     value={addForm.no_hp}
                     onChange={(e) =>
                       setAddForm((prev) => ({ ...prev, no_hp: e.target.value }))
                     }
+                    required
                   />
                 </div>
                 <div className="form-group">
@@ -801,77 +851,35 @@ export default function ManajemenWarga() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>NIK * (16 digit)</label>
-                  <input
-                    type="text"
-                    maxLength={16}
-                    value={addForm.nik}
-                    onChange={(e) =>
-                      setAddForm((prev) => ({
-                        ...prev,
-                        nik: e.target.value.replace(/\\D/g, ""),
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>KK * (16 digit)</label>
-                  <input
-                    type="text"
-                    maxLength={16}
-                    value={addForm.kk}
-                    onChange={(e) =>
-                      setAddForm((prev) => ({
-                        ...prev,
-                        kk: e.target.value.replace(/\\D/g, ""),
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group form-group--full">
-                  <label>Alamat</label>
-                  <input
-                    type="text"
-                    value={addForm.alamat}
-                    onChange={(e) =>
-                      setAddForm((prev) => ({
-                        ...prev,
-                        alamat: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="form-group">
-                  <label>No. Rumah</label>
-                  <input
-                    type="text"
-                    value={addForm.no_rumah}
-                    onChange={(e) =>
-                      setAddForm((prev) => ({
-                        ...prev,
-                        no_rumah: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Status Huni</label>
+                  <label>Role</label>
                   <select
-                    value={addForm.status_huni}
+                    value={addForm.role}
                     onChange={(e) =>
-                      setAddForm((prev) => ({
-                        ...prev,
-                        status_huni: e.target.value,
-                      }))
+                      setAddForm((prev) => ({ ...prev, role: e.target.value }))
                     }
                   >
-                    <option value="pemilik">Pemilik</option>
-                    <option value="penyewa">Penyewa</option>
+                    <option value="warga">Warga</option>
+                    <option value="bendahara">Bendahara</option>
+                    <option value="admin">Admin</option>
                   </select>
                 </div>
               </div>
+              {addForm.role === "warga" ? (
+              <div className="form-info">
+                <AlertCircle size={16} />
+                <span>
+                  Warga akan login dan mengisi data lengkap (NIK, KK, alamat, foto KTP) melalui
+                  form onboarding. Admin kemudian memverifikasi data tersebut.
+                </span>
+              </div>
+              ) : (
+              <div className="form-info">
+                <AlertCircle size={16} />
+                <span>
+                  Akun {addForm.role} akan langsung aktif tanpa perlu onboarding.
+                </span>
+              </div>
+              )}
               <div className="modal__footer">
                 <button
                   type="button"
