@@ -9,7 +9,7 @@ const ADMIN_CONFIG = {
   nama:     'Ketua RT-003',
   email:    'admin@example.com',   // ← ganti email admin
   password: 'Admin12345',        // ← ganti password (min 8 char, huruf+angka+simbol)
-  no_hp:    '6285285944423',        // ← ganti nomor HP admin
+  no_hp:    '6285288888888',        // ← ganti nomor HP admin
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
