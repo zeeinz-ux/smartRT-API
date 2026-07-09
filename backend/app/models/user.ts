@@ -4,7 +4,7 @@ import { BaseModel, column, hasOne, hasMany } from '@adonisjs/lucid/orm'
 import { beforeSave } from '@adonisjs/lucid/orm'
 import type { HasOne, HasMany } from '@adonisjs/lucid/types/relations'
 import WargaProfile from './warga_profile.ts'
-import IuranSampah from './iuran_sampah.ts'
+import Iuran from './iuran.ts'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
@@ -46,10 +46,10 @@ export default class User extends BaseModel {
   })
   declare wargaProfile: HasOne<typeof WargaProfile>
 
-  @hasMany(() => IuranSampah, {
+  @hasMany(() => Iuran, {
     foreignKey: 'warga_id',
   })
-  declare iuranSampah: HasMany<typeof IuranSampah>
+  declare iuran: HasMany<typeof Iuran>
 
   // ✅ FIX: Tambah @beforeSave decorator
   @beforeSave()

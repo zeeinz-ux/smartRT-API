@@ -409,6 +409,77 @@ class GoogleSheetsService {
     }
   }
 
+  /**
+   * Catat pembayaran iuran ke sheet "Iuran"
+   */
+  async appendIuran(data: {
+    id: string
+    warga: string
+    kategori_id: string
+    bulan: number | null
+    tahun: number
+    jumlah: number
+    status: string
+    metode: string | null
+    paid_at: string | null
+  }): Promise<boolean> {
+    if (!this.isAvailable()) {
+      console.warn('Google Sheets not available, skipping iuran sync')
+      return false
+    }
+
+    try {
+      const sheetTitle = 'Iuran'
+      const row = [
+        data.id,
+        data.warga,
+        data.kategori_id,
+        data.bulan ? `${data.tahun}-${String(data.bulan).padStart(2, '0')}` : String(data.tahun),
+        data.jumlah,
+        data.status,
+        data.metode || '',
+        data.paid_at || '',
+        new Date().toISOString(),
+      ]
+
+      await this.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: `${sheetTitle}!A2`,
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: { values: [row] },
+      })
+
+      console.log(`✅ Pembayaran iuran ${data.warga} synced to Google Sheets`)
+      return true
+    } catch (error) {
+      console.error('❌ Failed to sync iuran to Google Sheets:', error)
+      return false
+    }
+  }
+
+  /**
+   * Setup headers untuk sheet "Iuran"
+   */
+  async setupIuranHeaders(): Promise<boolean> {
+    if (!this.isAvailable()) return false
+
+    try {
+      const headers = [['ID', 'Warga', 'Kategori ID', 'Periode', 'Jumlah', 'Status', 'Metode', 'Tanggal Bayar', 'Timestamp Sync']]
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: 'Iuran!A1:I1',
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: headers },
+      })
+      console.log('✅ Iuran sheet headers setup complete')
+      return true
+    } catch (error) {
+      console.error('❌ Failed to setup Iuran headers:', error)
+      return false
+    }
+  }
+
   async setupHeaders(): Promise<boolean> {
     if (!this.isAvailable()) return false
 
@@ -453,6 +524,7 @@ class GoogleSheetsService {
 
       await this.setupIuranSampahHeaders()
       await this.setupIuranQurbanHeaders()
+      await this.setupIuranHeaders()
 
       return true
     } catch (error) {

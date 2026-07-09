@@ -17,23 +17,23 @@ export default class KeuanganController {
       const bulan = Number(request.input('bulan', 0))
       const tahun = Number(request.input('tahun', now.year))
 
-      // Pemasukan dari iuran_sampah
-      let sampahQuery = db.from('iuran_sampah')
+      // Pemasukan dari iuran (unified)
+      let iuranQuery = db.from('iurans')
+        .leftJoin('kategori_iurans', 'kategori_iurans.id', 'iurans.kategori_id')
       if (bulan >= 1 && bulan <= 12) {
-        sampahQuery = sampahQuery.where('bulan', bulan)
+        iuranQuery = iuranQuery.where('iurans.bulan', bulan)
       }
-      sampahQuery = sampahQuery.where('tahun', tahun).where('status', 'lunas')
-      const sampahRows = await sampahQuery
-      const pemasukanSampah = sampahRows.reduce((sum: number, r: any) => sum + Number(r.jumlah), 0)
+      iuranQuery = iuranQuery.where('iurans.tahun', tahun).where('iurans.status', 'lunas')
+        .select('iurans.*', 'kategori_iurans.nama as kategori_nama')
+      const iuranRows = await iuranQuery
+      const totalPemasukan = iuranRows.reduce((sum: number, r: any) => sum + Number(r.jumlah), 0)
 
-      // Pemasukan dari iuran_qurban
-      let qurbanQuery = db.from('iuran_qurban')
-      if (bulan >= 1 && bulan <= 12) {
-        qurbanQuery = qurbanQuery.where('bulan', bulan)
+      // Breakdown per kategori
+      const pemasukanByKategori: Record<string, number> = {}
+      for (const r of iuranRows) {
+        const kate = r.kategori_nama || 'Unknown'
+        pemasukanByKategori[kate] = (pemasukanByKategori[kate] || 0) + Number(r.jumlah)
       }
-      qurbanQuery = qurbanQuery.where('tahun', tahun).where('status', 'lunas')
-      const qurbanRows = await qurbanQuery
-      const pemasukanQurban = qurbanRows.reduce((sum: number, r: any) => sum + Number(r.jumlah), 0)
 
       // Pengeluaran
       let pengeluaranQuery = Pengeluaran.query()
@@ -44,29 +44,15 @@ export default class KeuanganController {
       const pengeluaranRows = await pengeluaranQuery
       const totalPengeluaran = pengeluaranRows.reduce((sum: number, p) => sum + Number(p.jumlah), 0)
 
-      const totalPemasukan = pemasukanSampah + pemasukanQurban
-
       // Mutasi — gabung pemasukan & pengeluaran
       const mutasi: any[] = []
 
-      for (const r of sampahRows) {
+      for (const r of iuranRows) {
         mutasi.push({
           id: r.id,
           tipe: 'pemasukan',
-          kategori: 'Iuran Sampah',
-          nama: `Pembayaran sampah (${r.bulan}/${r.tahun})`,
-          jumlah: Number(r.jumlah),
-          tanggal: r.paid_at || r.created_at,
-          warga_id: r.warga_id,
-        })
-      }
-
-      for (const r of qurbanRows) {
-        mutasi.push({
-          id: r.id,
-          tipe: 'pemasukan',
-          kategori: 'Iuran Qurban',
-          nama: `Pembayaran qurban ${r.tahun}`,
+          kategori: r.kategori_nama || 'Iuran',
+          nama: `Pembayaran ${r.kategori_nama || 'iuran'}${r.bulan ? ` (${r.bulan}/${r.tahun})` : ` ${r.tahun}`}`,
           jumlah: Number(r.jumlah),
           tanggal: r.paid_at || r.created_at,
           warga_id: r.warga_id,
@@ -88,16 +74,17 @@ export default class KeuanganController {
       mutasi.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
 
       // ── Chart data: pemasukan & pengeluaran per bulan ──
-      const allSampahYear = await db.from('iuran_sampah').where('tahun', tahun).where('status', 'lunas')
-      const allQurbanYear = await db.from('iuran_qurban').where('tahun', tahun).where('status', 'lunas')
+      const allIuranYear = await db.from('iurans').where('tahun', tahun).where('status', 'lunas')
       const allPengYear = await Pengeluaran.query().whereRaw('EXTRACT(YEAR FROM tanggal) = ?', [tahun])
 
       const pemasukanByMonth: Record<number, number> = {}
       const pengeluaranByMonth: Record<number, number> = {}
       for (let m = 1; m <= 12; m++) { pemasukanByMonth[m] = 0; pengeluaranByMonth[m] = 0 }
 
-      for (const r of allSampahYear) pemasukanByMonth[r.bulan] += Number(r.jumlah)
-      for (const r of allQurbanYear) pemasukanByMonth[r.bulan] += Number(r.jumlah)
+      for (const r of allIuranYear) {
+        if (r.bulan) pemasukanByMonth[r.bulan] += Number(r.jumlah)
+        else pemasukanByMonth[1] += Number(r.jumlah) // tahunan/insidental masuk bulan 1
+      }
       for (const p of allPengYear) {
         const m = p.tanggal.month
         pengeluaranByMonth[m] += Number(p.jumlah)
@@ -127,8 +114,7 @@ export default class KeuanganController {
           totalPemasukan,
           totalPengeluaran,
           saldo: totalPemasukan - totalPengeluaran,
-          pemasukanSampah,
-          pemasukanQurban,
+          pemasukanByKategori,
           mutasi,
           chartBulanan,
           chartKategori,

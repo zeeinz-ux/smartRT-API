@@ -2,8 +2,6 @@ import { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import User from '#models/user'
 import WargaProfile from '#models/warga_profile'
-import IuranSampah from '#models/iuran_sampah'
-import IuranQurban from '#models/iuran_qurban'
 import db from '@adonisjs/lucid/services/db'
 import GoogleSheetsService from '#services/google_sheets'
 
@@ -478,11 +476,8 @@ export default class AdminController {
       const user = await User.findOrFail(params.id)
       const nama = user.nama
 
-      // Hapus iuran sampah terkait
-      await IuranSampah.query().where('warga_id', user.id).delete()
-
-      // Hapus iuran qurban terkait
-      await IuranQurban.query().where('warga_id', user.id).delete()
+      // Hapus iuran terkait
+      await db.from('iurans').where('warga_id', user.id).delete()
 
       // Hapus profile jika ada
       const profile = await WargaProfile.findBy('user_id', user.id)
@@ -578,6 +573,23 @@ export default class AdminController {
         .whereNull('warga_profiles.id')
         .count('* as total')
 
+      // Iuran stats
+      const now = DateTime.now()
+      const [{ total: iuranPending }] = await db.from('iurans').where('status', 'pending').count('* as total')
+      const [{ total: iuranBulanIni }] = await db.from('iurans')
+        .where('bulan', now.month)
+        .where('tahun', now.year)
+        .where('status', 'lunas')
+        .count('* as total')
+      const [{ total: totalWargaWithIuran }] = await db.from('iurans')
+        .where('bulan', now.month)
+        .where('tahun', now.year)
+        .distinct('warga_id')
+        .count('* as total')
+      const [{ sum: totalTunggakan }] = await db.from('iurans')
+        .whereIn('status', ['belum_lunas', 'pending'])
+        .sum('jumlah as sum')
+
       const recentPending = await db.from('warga_profiles')
         .join('users', 'warga_profiles.user_id', 'users.id')
         .select('warga_profiles.id', 'users.nama', 'users.email', 'warga_profiles.created_at')
@@ -594,6 +606,10 @@ export default class AdminController {
         .orderBy('users.created_at', 'desc')
         .limit(5)
 
+      const persenKepatuhan = Number(totalWargaWithIuran) > 0
+        ? Math.round((Number(iuranBulanIni) / Number(totalWargaWithIuran)) * 100)
+        : 0
+
       return response.json({
         success: true,
         stats: {
@@ -602,6 +618,9 @@ export default class AdminController {
           wargaVerified: Number(wargaVerified || 0),
           wargaRejected: Number(wargaRejected || 0),
           wargaNonOnboarded: Number(wargaNonOnboarded || 0),
+          iuranPending: Number(iuranPending || 0),
+          totalTunggakan: Number(totalTunggakan || 0),
+          kepatuhanBulanIni: persenKepatuhan,
         },
         recentPending,
         recentNonOnboarded,

@@ -10,7 +10,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 
 // ===== KONFIGURASI =====
 const ADMIN_CONFIG = {
-  whatsappNumber: "6285285944423",
+  whatsappNumber: "6285288888888", // Ganti dengan nomor WhatsApp admin (format internasional tanpa tanda +)
   whatsappName: "Admin RT-003",
   emailSupport: "admin@rt003.local",
 };
@@ -21,10 +21,14 @@ export default function Login() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
-  const [email, setEmail] = useState(() => localStorage.getItem('rememberedEmail') || "");
+  const [email, setEmail] = useState(
+    () => localStorage.getItem("rememberedEmail") || "",
+  );
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(!!localStorage.getItem('rememberedEmail'));
+  const [rememberMe, setRememberMe] = useState(
+    !!localStorage.getItem("rememberedEmail"),
+  );
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -32,7 +36,8 @@ export default function Login() {
   const [error, setError] = useState(() => {
     const p = new URLSearchParams(window.location.search);
     const e = p.get("error");
-    if (e === "email_not_registered") return "Email akun belum terdaftar, silahkan hubungi admin.";
+    if (e === "email_not_registered")
+      return "Email akun belum terdaftar, silahkan hubungi admin.";
     if (e === "access_denied") return "Login Google dibatalkan.";
     if (e === "server_error") return "Terjadi kesalahan server. Coba lagi.";
     return null;
@@ -67,44 +72,47 @@ export default function Login() {
   // ── Debounced check role saat email berubah ──
   useEffect(() => {
     if (!email || email.length < 5) {
-      setRoleChecked(false)
-      setSelectedRole(null)
-      setRoleNotFound(false)
-      return
+      setRoleChecked(false);
+      setSelectedRole(null);
+      setRoleNotFound(false);
+      return;
     }
 
     const timer = setTimeout(async () => {
-      setCheckingRole(true)
+      setCheckingRole(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/check-role?email=${encodeURIComponent(email)}`, {
-          credentials: "include",
-        })
-        const data = await res.json()
+        const res = await fetch(
+          `${API_BASE_URL}/api/auth/check-role?email=${encodeURIComponent(email)}`,
+          {
+            credentials: "include",
+          },
+        );
+        const data = await res.json();
         if (data.success && data.exists) {
-          setSelectedRole(data.role)
-          setRoleChecked(true)
-          setRoleNotFound(false)
+          setSelectedRole(data.role);
+          setRoleChecked(true);
+          setRoleNotFound(false);
         } else {
-          setSelectedRole(null)
-          setRoleChecked(false)
-          setRoleNotFound(true)
+          setSelectedRole(null);
+          setRoleChecked(false);
+          setRoleNotFound(true);
         }
       } catch {
-        setRoleChecked(false)
-        setRoleNotFound(false)
+        setRoleChecked(false);
+        setRoleNotFound(false);
       } finally {
-        setCheckingRole(false)
+        setCheckingRole(false);
       }
-    }, 500)
+    }, 500);
 
-    return () => clearTimeout(timer)
-  }, [email])
+    return () => clearTimeout(timer);
+  }, [email]);
 
   const roleLabels = {
     admin: "Admin RT",
     bendahara: "Bendahara",
     warga: "Warga",
-  }
+  };
 
   async function handleEmailLogin(e) {
     e.preventDefault();
@@ -157,22 +165,22 @@ export default function Login() {
 
   function handleRememberToggle() {
     setRememberMe((v) => {
-      const next = !v
+      const next = !v;
       if (next) {
-        localStorage.setItem('rememberedEmail', email)
+        localStorage.setItem("rememberedEmail", email);
       } else {
-        localStorage.removeItem('rememberedEmail')
+        localStorage.removeItem("rememberedEmail");
       }
-      return next
-    })
+      return next;
+    });
   }
 
   // Simpan email kalo rememberMe diaktifkan
   useEffect(() => {
     if (rememberMe && email) {
-      localStorage.setItem('rememberedEmail', email)
+      localStorage.setItem("rememberedEmail", email);
     }
-  }, [email, rememberMe])
+  }, [email, rememberMe]);
 
   function handleHubungiAdmin() {
     const message =
@@ -201,11 +209,29 @@ export default function Login() {
         title={theme === "light" ? "Mode Gelap" : "Mode Terang"}
       >
         {theme === "light" ? (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            width="18"
+            height="18"
+          >
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>
         ) : (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            width="18"
+            height="18"
+          >
             <circle cx="12" cy="12" r="5" />
             <line x1="12" y1="1" x2="12" y2="3" />
             <line x1="12" y1="21" x2="12" y2="23" />
@@ -357,7 +383,9 @@ export default function Login() {
               >
                 {!roleChecked && (
                   <option value="">
-                    {checkingRole ? "Memeriksa..." : "Masukkan email terlebih dahulu"}
+                    {checkingRole
+                      ? "Memeriksa..."
+                      : "Masukkan email terlebih dahulu"}
                   </option>
                 )}
                 {roleNotFound && (

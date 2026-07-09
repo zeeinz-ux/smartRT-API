@@ -20,10 +20,14 @@ import ManajemenLaporan from "./pages/admin/ManajemenLaporan";
 import AdminPengumuman from "./pages/admin/Pengumuman";
 import AdminSurat from "./pages/admin/Surat";
 import AdminDarurat from "./pages/admin/Darurat";
+import AdminIuran from "./pages/admin/AdminIuran";
+import VerifikasiIuran from "./pages/admin/VerifikasiIuran";
+import MonitoringTagihan from "./pages/admin/MonitoringTagihan";
 import Settings from "./pages/Settings";
 import LaporanWarga from "./pages/warga/LaporanWarga";
 import WargaPengumuman from "./pages/warga/Pengumuman";
 import WargaSurat from "./pages/warga/Surat";
+import WargaTagihan from "./pages/warga/WargaTagihan";
 import RiwayatDarurat from "./pages/warga/RiwayatDarurat";
 import BendaharaDashboard from "./pages/bendahara/BendaharaDashboard";
 import WargaDashboard from "./pages/warga/WargaDashboard";
@@ -85,6 +89,30 @@ export default function App() {
         element={
           <ProtectedPage allowedRoles={["admin", "bendahara"]}>
             <UangQurban />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/iuran"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <AdminIuran />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/verifikasi-iuran"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <VerifikasiIuran />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/monitoring-tagihan"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <MonitoringTagihan />
           </ProtectedPage>
         }
       />
@@ -155,6 +183,14 @@ export default function App() {
         }
       />
       <Route
+        path="/bendahara/iuran"
+        element={
+          <ProtectedPage allowedRoles={["bendahara", "admin"]}>
+            <AdminIuran />
+          </ProtectedPage>
+        }
+      />
+      <Route
         path="/bendahara/keuangan"
         element={
           <ProtectedPage allowedRoles={["bendahara", "admin"]}>
@@ -169,6 +205,14 @@ export default function App() {
         element={
           <ProtectedPage allowedRoles={["warga"]}>
             <WargaDashboard />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/warga/tagihan"
+        element={
+          <ProtectedPage allowedRoles={["warga"]}>
+            <WargaTagihan />
           </ProtectedPage>
         }
       />

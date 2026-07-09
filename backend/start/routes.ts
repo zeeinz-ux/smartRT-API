@@ -13,6 +13,9 @@ import SuratTemplateController from '#controllers/surat_template_controller'
 import UploadController from '#controllers/upload_controller'
 import DaruratController from '#controllers/darurat_controller'
 import NotifikasiController from '#controllers/notifikasi_controller'
+import IuranController from '#controllers/iuran_controller'
+import KategoriIuranController from '#controllers/kategori_iuran_controller'
+import PaymentSettingController from '#controllers/payment_setting_controller'
 
 // ─── Public Routes ───
 router.group(() => {
@@ -43,6 +46,13 @@ router.group(() => {
   // Surat (warga)
   router.get('/warga/surat', [SuratController, 'index']).as('surat.warga.index')
   router.post('/warga/surat', [SuratController, 'store']).as('surat.warga.store')
+
+  // Tagihan warga
+  router.get('/warga/tagihan', [IuranController, 'tagihanSaya']).as('warga.tagihan')
+  router.patch('/warga/tagihan/:id/bayar', [IuranController, 'wargaBayar']).as('warga.tagihan.bayar')
+
+  // Payment settings (warga — read only)
+  router.get('/warga/payment-settings', [PaymentSettingController, 'show']).as('warga.payment-settings')
 
   // Upload file (auth required)
   router.post('/upload', [UploadController, 'image']).as('upload.image')
@@ -85,6 +95,29 @@ router.group(() => {
   router.post('/admin/qurban', [QurbanController, 'store'])
   router.patch('/admin/qurban/:id', [QurbanController, 'update'])
   router.delete('/admin/qurban/:id', [QurbanController, 'destroy'])
+
+  // Kategori Iuran
+  router.get('/admin/kategori-iuran', [KategoriIuranController, 'index'])
+  router.post('/admin/kategori-iuran', [KategoriIuranController, 'store'])
+  router.patch('/admin/kategori-iuran/:id', [KategoriIuranController, 'update'])
+  router.delete('/admin/kategori-iuran/:id', [KategoriIuranController, 'destroy'])
+
+  // Iuran Generik (all-in-one)
+  router.get('/admin/iuran', [IuranController, 'index'])
+  router.post('/admin/iuran', [IuranController, 'store'])
+  router.post('/admin/iuran/generate', [IuranController, 'generate'])
+  router.get('/admin/iuran/verifikasi', [IuranController, 'pendingVerifikasi'])
+  router.get('/admin/iuran/monitoring', [IuranController, 'monitoring'])
+  router.post('/admin/iuran/:id/approve', [IuranController, 'approve'])
+  router.post('/admin/iuran/:id/reject', [IuranController, 'reject'])
+  router.patch('/admin/iuran/:id', [IuranController, 'update'])
+  router.delete('/admin/iuran/:id', [IuranController, 'destroy'])
+
+  // Payment Settings
+  router.get('/admin/payment-settings', [PaymentSettingController, 'index']).as('admin.payment-settings.index')
+  router.post('/admin/payment-settings', [PaymentSettingController, 'store']).as('admin.payment-settings.store')
+  router.patch('/admin/payment-settings/:id', [PaymentSettingController, 'update']).as('admin.payment-settings.update')
+  router.delete('/admin/payment-settings/:id', [PaymentSettingController, 'destroy']).as('admin.payment-settings.destroy')
 
   // Google Sheets
   router.post('/admin/sheets/setup', [AdminController, 'setupSheets'])

@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   Database,
   EyeOff,
+  DollarSign,
 } from "lucide-react";
 import "../../assets/style/css/AdminDashboard.css";
 import { getCachedUser } from "../../components/ProtectedRoute";
@@ -50,6 +51,10 @@ export default function AdminDashboard() {
     totalWarga: 0,
     wargaPending: 0,
     wargaNonOnboarded: 0,
+    wargaVerified: 0,
+    iuranPending: 0,
+    totalTunggakan: 0,
+    kepatuhanBulanIni: 0,
     laporanBaru: 0,
     suratPending: 0,
     pendapatanBulanIni: 0,
@@ -87,6 +92,9 @@ export default function AdminDashboard() {
           wargaPending: dashboard.stats.wargaPending,
           wargaNonOnboarded: dashboard.stats.wargaNonOnboarded,
           wargaVerified: dashboard.stats.wargaVerified,
+          iuranPending: dashboard.stats.iuranPending || 0,
+          totalTunggakan: dashboard.stats.totalTunggakan || 0,
+          kepatuhanBulanIni: dashboard.stats.kepatuhanBulanIni || 0,
           laporanBaru: 0,
           suratPending: 0,
           pendapatanBulanIni: rekap.success ? rekap.data.totalPemasukan : 0,
@@ -236,11 +244,13 @@ export default function AdminDashboard() {
   };
 
   const formatCurrency = (amount) => {
+    const num = Number(amount);
+    if (isNaN(num)) return "Rp 0";
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(num);
   };
 
   const formatDate = (dateString) => {
@@ -426,6 +436,33 @@ export default function AdminDashboard() {
           trend="down"
           trendValue=""
           color="danger"
+        />
+        <StatCard
+          title="Iuran Pending"
+          value={stats.iuranPending}
+          subtitle="menunggu verifikasi"
+          icon={DollarSign}
+          trend="up"
+          trendValue=""
+          color="warning"
+        />
+        <StatCard
+          title="Total Tunggakan"
+          value={formatCurrency(stats.totalTunggakan)}
+          subtitle="belum dibayar"
+          icon={BarChart3}
+          trend="down"
+          trendValue=""
+          color="danger"
+        />
+        <StatCard
+          title="Kepatuhan Bulan Ini"
+          value={`${stats.kepatuhanBulanIni}%`}
+          subtitle="warga lunas tepat waktu"
+          icon={TrendingUp}
+          trend={stats.kepatuhanBulanIni >= 70 ? "up" : "down"}
+          trendValue=""
+          color={stats.kepatuhanBulanIni >= 70 ? "success" : "danger"}
         />
         <StatCard
           title="Pengajuan Surat"

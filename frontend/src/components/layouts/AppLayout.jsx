@@ -23,8 +23,7 @@ const MENUS = {
     {
       group: "Keuangan",
       items: [
-        { to: "/admin/sampah", label: "Uang Sampah", icon: <IconTrash /> },
-        { to: "/admin/kurban", label: "Uang Qurban", icon: <IconHeart /> },
+        { to: "/admin/iuran", label: "Iuran Warga", icon: <IconWallet /> },
         { to: "/admin/keuangan", label: "Rekap Keuangan", icon: <IconWallet /> },
       ],
     },
@@ -54,8 +53,7 @@ const MENUS = {
     {
       group: "Keuangan",
       items: [
-        { to: "/bendahara/sampah", label: "Uang Sampah", icon: <IconTrash /> },
-        { to: "/bendahara/kurban", label: "Uang Qurban", icon: <IconHeart /> },
+        { to: "/bendahara/iuran", label: "Iuran Warga", icon: <IconWallet /> },
         { to: "/bendahara/keuangan", label: "Rekap Keuangan", icon: <IconWallet /> },
       ],
     },

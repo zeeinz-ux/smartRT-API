@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import RupiahInput from "../../components/RupiahInput";
 import {
   Search,
   ChevronLeft,
@@ -392,7 +393,7 @@ export default function Keuangan() {
               </div>
               <div className="form-group">
                 <label>Jumlah *</label>
-                <input type="number" value={form.jumlah} onChange={(e) => setForm((p) => ({ ...p, jumlah: e.target.value }))} required min="0" />
+                <RupiahInput value={form.jumlah} onChange={(v) => setForm((p) => ({ ...p, jumlah: v }))} required />
               </div>
               <div className="form-group">
                 <label>Kategori</label>

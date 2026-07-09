@@ -17,6 +17,7 @@ import {
   Building,
   Banknote,
 } from "lucide-react";
+import RupiahInput from "../../components/RupiahInput";
 import "../../assets/style/css/UangSampah.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
@@ -75,7 +76,7 @@ export default function UangSampah() {
     keterangan: "",
   });
 
-  const QRIS_IMAGE_URL = `${API_BASE_URL}/images/qris.png`;
+  const QRIS_IMAGE_URL = import.meta.env.VITE_QRIS_IMAGE_URL || `${API_BASE_URL}/images/qris.png`;
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -537,12 +538,7 @@ export default function UangSampah() {
               </div>
               <div className="form-group">
                 <label>Jumlah Pembayaran</label>
-                <input
-                  type="number"
-                  value={formBayar.jumlah}
-                  onChange={(e) => setFormBayar((p) => ({ ...p, jumlah: Number(e.target.value) }))}
-                  required
-                />
+                <RupiahInput value={formBayar.jumlah} onChange={(v) => setFormBayar((p) => ({ ...p, jumlah: v }))} required />
               </div>
               <div className="form-group">
                 <label>Metode Pembayaran</label>
@@ -634,12 +630,7 @@ export default function UangSampah() {
               </div>
               <div className="form-group">
                 <label>Jumlah</label>
-                <input
-                  type="number"
-                  value={formEdit.jumlah}
-                  onChange={(e) => setFormEdit((p) => ({ ...p, jumlah: Number(e.target.value) }))}
-                  required
-                />
+                <RupiahInput value={formEdit.jumlah} onChange={(v) => setFormEdit((p) => ({ ...p, jumlah: v }))} required />
               </div>
               <div className="form-group">
                 <label>Status</label>

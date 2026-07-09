@@ -26,7 +26,7 @@ export default class WargaProfile extends BaseModel {
 
   // ✅ FIX: Sinkronkan dengan controller — 'pemilik' | 'penyewa'
   @column()
-  declare status_huni: 'pemilik' | 'penyewa' | null
+  declare status_huni: 'pemilik' | 'penyewa' | 'numpang' | null
 
   @column()
   declare foto_ktp_url: string | null

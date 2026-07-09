@@ -13,10 +13,9 @@ const STEPS = [
 ];
 
 const STATUS_HUNI_OPTIONS = [
-  { value: "milik_sendiri", label: "Milik Sendiri" },
-  { value: "kontrak", label: "Kontrak / Sewa" },
-  { value: "numpang", label: "Numpang / Keluarga" },
-  { value: "lainnya", label: "Lainnya" },
+  { value: "pemilik", label: "Milik Sendiri" },
+  { value: "penyewa", label: "Kontrak" },
+  { value: "numpang", label: "Milik Orang Tua" },
 ];
 
 // ─── Validators ───────────────────────────────────────────────────────────────

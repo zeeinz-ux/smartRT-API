@@ -1,6 +1,9 @@
 import { HttpContext } from '@adonisjs/core/http'
 import cuid from 'cuid'
 import WargaProfile from '#models/warga_profile'
+import Iuran from '#models/iuran'
+import Laporan from '#models/laporan'
+import SuratPengantar from '#models/surat_pengantar'
 import { validateNIK, validateKK } from '#utils/kependudukan'
 
 export default class WargaController {
@@ -62,6 +65,13 @@ export default class WargaController {
         return response.status(400).json({
           success: false,
           message: 'Semua field wajib diisi',
+        })
+      }
+
+      if (!['pemilik', 'penyewa', 'numpang'].includes(status_huni)) {
+        return response.status(400).json({
+          success: false,
+          message: 'Status huni tidak valid',
         })
       }
 
@@ -241,7 +251,15 @@ export default class WargaController {
 
       if (alamat) profile.alamat = alamat
       if (no_rumah) profile.no_rumah = no_rumah
-      if (status_huni) profile.status_huni = status_huni
+      if (status_huni) {
+        if (!['pemilik', 'penyewa', 'numpang'].includes(status_huni)) {
+          return response.status(400).json({
+            success: false,
+            message: 'Status huni tidak valid',
+          })
+        }
+        profile.status_huni = status_huni
+      }
 
       await profile.save()
 
@@ -266,16 +284,23 @@ export default class WargaController {
       const user = auth.user!
       const profile = await WargaProfile.findBy('user_id', user.id)
 
+      const [aktifTagihan, suratPending, laporan] = await Promise.all([
+        Iuran.query().where('warga_id', user.id).where('status', 'belum_lunas'),
+        SuratPengantar.query().where('user_id', user.id).where('status', 'pending'),
+        Laporan.query().where('user_id', user.id),
+      ])
+
       return response.json({
         success: true,
         dashboard: {
           user_id: user.id,
           nama: user.nama,
+          email: user.email,
           role: user.role,
           verification_status: profile?.verification_status || 'not_registered',
-          aktifTagihan: [],
-          suratPending: [],
-          laporanDraft: [],
+          aktifTagihan: aktifTagihan.map((t) => ({ id: t.id, jumlah: t.jumlah })),
+          suratPending: suratPending.map((s) => ({ id: s.id })),
+          laporanDraft: laporan.map((l) => ({ id: l.id })),
         },
       })
     } catch (error) {

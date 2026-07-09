@@ -86,6 +86,64 @@ export class IuranSampahSchema extends BaseModel {
   declare wargaId: string
 }
 
+export class IuranSchema extends BaseModel {
+  static $columns = ['buktiPembayaranUrl', 'bulan', 'createdAt', 'id', 'jumlah', 'kategoriId', 'keterangan', 'metodePembayaran', 'paidAt', 'rejectionReason', 'status', 'tahun', 'updatedAt', 'verifiedAt', 'verifiedBy', 'wargaId'] as const
+  $columns = IuranSchema.$columns
+  @column()
+  declare buktiPembayaranUrl: string | null
+  @column()
+  declare bulan: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare jumlah: string
+  @column()
+  declare kategoriId: string
+  @column()
+  declare keterangan: string | null
+  @column()
+  declare metodePembayaran: string | null
+  @column.dateTime()
+  declare paidAt: DateTime | null
+  @column()
+  declare rejectionReason: string | null
+  @column()
+  declare status: string
+  @column()
+  declare tahun: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column.dateTime()
+  declare verifiedAt: DateTime | null
+  @column()
+  declare verifiedBy: string | null
+  @column()
+  declare wargaId: string
+}
+
+export class KategoriIuranSchema extends BaseModel {
+  static $columns = ['aktif', 'createdAt', 'deskripsi', 'id', 'jumlahDefault', 'nama', 'periode', 'updatedAt'] as const
+  $columns = KategoriIuranSchema.$columns
+  @column()
+  declare aktif: boolean
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deskripsi: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare jumlahDefault: string
+  @column()
+  declare nama: string
+  @column()
+  declare periode: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class LaporanSchema extends BaseModel {
   static $columns = ['createdAt', 'ditanggapiAt', 'ditanggapiOleh', 'foto', 'id', 'isi', 'judul', 'status', 'tanggapan', 'updatedAt', 'userId'] as const
   $columns = LaporanSchema.$columns
@@ -134,6 +192,25 @@ export class NotifikasiSchema extends BaseModel {
   declare updatedAt: DateTime
   @column()
   declare userId: string
+}
+
+export class PaymentSettingSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'namaBank', 'namaPenerima', 'nomorRekening', 'qrisPath', 'updatedAt'] as const
+  $columns = PaymentSettingSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare namaBank: string
+  @column()
+  declare namaPenerima: string
+  @column()
+  declare nomorRekening: string
+  @column()
+  declare qrisPath: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
 }
 
 export class PengeluaranSchema extends BaseModel {
