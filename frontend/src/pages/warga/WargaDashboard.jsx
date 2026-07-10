@@ -56,7 +56,7 @@ export default function WargaDashboard() {
   const badge = statusBadge[dashboard.verification_status] || statusBadge.not_registered;
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "var(--space-xl)" }}>
+    <div>
       {/* Header */}
       <div className="ad-header">
         <div>

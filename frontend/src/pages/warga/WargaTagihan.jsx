@@ -138,7 +138,7 @@ export default function WargaTagihan() {
   ];
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: "var(--space-xl)" }}>
+    <div>
       <div className="ad-header">
         <div>
           <h1 className="ad-header__title">Tagihan Saya</h1>
