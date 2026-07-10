@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, X, ChevronLeft, ChevronRight, Edit3, Trash2, Globe, FileText, Clock, Upload, Camera, Trash } from "lucide-react";
 import CameraCapture from "../../components/CameraCapture";
+import { formatDateTime } from "../../utils/formatDate.js";
 import "../../assets/style/css/AdminPengumuman.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+import API_BASE_URL from "../../utils/api.js";
 
 function nowLocalISO() {
   const d = new Date();
@@ -217,12 +212,12 @@ export default function AdminPengumuman() {
                             <Icon size={12} /> {st.label}
                           </span>
                         </td>
-                        <td className="ap-cell-date">{formatDate(item.created_at)}</td>
+                        <td className="ap-cell-date">{formatDateTime(item.created_at)}</td>
                         <td className="ap-cell-date ap-col-schedule">
                           {item.status === "scheduled"
-                            ? formatDate(item.published_at)
+                            ? formatDateTime(item.published_at)
                             : item.status === "published"
-                            ? formatDate(item.published_at)
+                            ? formatDateTime(item.published_at)
                             : "-"}
                         </td>
                         <td>

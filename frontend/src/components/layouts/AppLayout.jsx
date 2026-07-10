@@ -8,7 +8,7 @@ import { clearAuthCache, getCachedUser } from "../ProtectedRoute";
 import "../../assets/style/css/AppLayout.css";
 
 // ✅ FIX: Seragamkan dengan ProtectedRoute.jsx
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
+import API_BASE_URL from "../../utils/api.js";
 
 // ─── Menu Config per Role ─────────────────────────────────────────────────────
 const MENUS = {
@@ -24,6 +24,7 @@ const MENUS = {
       group: "Keuangan",
       items: [
         { to: "/admin/iuran", label: "Iuran Warga", icon: <IconWallet /> },
+        { to: "/admin/kategori-iuran", label: "Kategori Iuran", icon: <IconWallet /> },
         { to: "/admin/keuangan", label: "Rekap Keuangan", icon: <IconWallet /> },
       ],
     },
@@ -54,6 +55,7 @@ const MENUS = {
       group: "Keuangan",
       items: [
         { to: "/bendahara/iuran", label: "Iuran Warga", icon: <IconWallet /> },
+        { to: "/admin/kategori-iuran", label: "Kategori Iuran", icon: <IconWallet /> },
         { to: "/bendahara/keuangan", label: "Rekap Keuangan", icon: <IconWallet /> },
       ],
     },

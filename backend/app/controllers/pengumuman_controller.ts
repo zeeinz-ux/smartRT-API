@@ -1,6 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import Pengumuman from '#models/pengumuman'
+import { storePengumumanValidator, updatePengumumanValidator } from '#validators/pengumuman_validator'
 
 export default class PengumumanController {
   async index({ request, auth, response }: HttpContext) {
@@ -63,25 +64,14 @@ export default class PengumumanController {
         return response.status(401).json({ success: false, message: 'Belum login' })
       }
 
-      const { judul, isi, file, scheduled_at } = request.only(['judul', 'isi', 'file', 'scheduled_at'])
-
-      if (!judul || !isi) {
-        return response.status(400).json({
-          success: false,
-          message: 'Judul dan isi pengumuman wajib diisi',
-        })
-      }
+      const { judul, isi, file, scheduled_at } = await storePengumumanValidator.validate(request.only(['judul', 'isi', 'file', 'scheduled_at']))
 
       let published_at: DateTime | null = null
       let msg = 'Pengumuman berhasil disimpan sebagai draft'
 
       if (scheduled_at) {
-        const parsed = DateTime.fromISO(scheduled_at)
-        if (!parsed.isValid) {
-          return response.status(400).json({ success: false, message: 'Format tanggal tidak valid' })
-        }
-        published_at = parsed
-        msg = parsed <= DateTime.now()
+        published_at = scheduled_at
+        msg = scheduled_at <= DateTime.now()
           ? 'Pengumuman berhasil dipublikasikan'
           : 'Pengumuman akan dipublikasikan sesuai jadwal'
       }
@@ -141,22 +131,14 @@ export default class PengumumanController {
       }
 
       const pengumuman = await Pengumuman.findOrFail(params.id)
-      const { judul, isi, file, scheduled_at } = request.only(['judul', 'isi', 'file', 'scheduled_at'])
+      const { judul, isi, file, scheduled_at } = await updatePengumumanValidator.validate(request.only(['judul', 'isi', 'file', 'scheduled_at']))
 
       if (judul !== undefined) pengumuman.judul = judul
       if (isi !== undefined) pengumuman.isi = isi
       if (file !== undefined) pengumuman.file = file
 
       if (scheduled_at !== undefined) {
-        if (scheduled_at === null || scheduled_at === '') {
-          pengumuman.published_at = null
-        } else {
-          const parsed = DateTime.fromISO(scheduled_at)
-          if (!parsed.isValid) {
-            return response.status(400).json({ success: false, message: 'Format tanggal tidak valid' })
-          }
-          pengumuman.published_at = parsed
-        }
+        pengumuman.published_at = scheduled_at
       }
 
       await pengumuman.save()

@@ -23,6 +23,7 @@ import AdminDarurat from "./pages/admin/Darurat";
 import AdminIuran from "./pages/admin/AdminIuran";
 import VerifikasiIuran from "./pages/admin/VerifikasiIuran";
 import MonitoringTagihan from "./pages/admin/MonitoringTagihan";
+import KelolaKategoriIuran from "./pages/admin/KelolaKategoriIuran";
 import Settings from "./pages/Settings";
 import LaporanWarga from "./pages/warga/LaporanWarga";
 import WargaPengumuman from "./pages/warga/Pengumuman";
@@ -153,6 +154,14 @@ export default function App() {
         element={
           <ProtectedPage allowedRoles={["admin", "bendahara"]}>
             <AdminDarurat />
+          </ProtectedPage>
+        }
+      />
+      <Route
+        path="/admin/kategori-iuran"
+        element={
+          <ProtectedPage allowedRoles={["admin", "bendahara"]}>
+            <KelolaKategoriIuran />
           </ProtectedPage>
         }
       />

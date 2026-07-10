@@ -6,6 +6,7 @@ import { FcGoogle } from "react-icons/fc";
 import { MdWarningAmber } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import "../../assets/style/css/Login.css";
+import API_BASE_URL from "../../utils/api.js";
 
 // ===== KONFIGURASI =====
 const ADMIN_CONFIG = {
@@ -13,8 +14,6 @@ const ADMIN_CONFIG = {
   whatsappName: "Admin RT-003",
   emailSupport: "admin@rt003.local",
 };
-
-const API_BASE_URL = import.meta.env.DEV ? "http://localhost:3333" : "";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -381,9 +380,7 @@ export default function Login() {
               </span>
               Ingat Saya
             </label>
-            <a href="/auth/forgot-password" className="ms-link">
-              Lupa password?
-            </a>
+
           </div>
 
           <button

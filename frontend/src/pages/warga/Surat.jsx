@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, X, ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Download, FileText, Send } from "lucide-react";
+import { formatDateTime } from "../../utils/formatDate.js";
 import "../../assets/style/css/WargaSurat.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+import API_BASE_URL from "../../utils/api.js";
 
 const JENIS_OPTIONS = [
   { value: "domisili", label: "Surat Keterangan Domisili" },
@@ -113,7 +108,7 @@ export default function WargaSurat() {
                   </div>
                   {item.keterangan && <p className="ws-card__keterangan">{item.keterangan}</p>}
                   <div className="ws-card__footer">
-                    <span className="ws-card__date">{formatDate(item.created_at)}</span>
+                    <span className="ws-card__date">{formatDateTime(item.created_at)}</span>
                     <div className="ws-card__actions">
                       {item.nomor_surat && <span className="ws-card__nomor">{item.nomor_surat}</span>}
                       {item.file_pdf && (

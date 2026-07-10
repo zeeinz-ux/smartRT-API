@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 
 function formatRupiah(value) {
-  const num = value.replace(/\D/g, "");
-  if (!num) return "";
-  return new Intl.NumberFormat("id-ID").format(Number(num));
+  const num = parseInt(value, 10);
+  if (isNaN(num)) return "";
+  return new Intl.NumberFormat("id-ID").format(num);
 }
 
 export default function RupiahInput({
@@ -15,10 +15,10 @@ export default function RupiahInput({
   min = 0,
   name,
 }) {
-  const [display, setDisplay] = useState(() => (value ? formatRupiah(String(value)) : ""));
+  const [display, setDisplay] = useState(() => (value !== null && value !== undefined && value !== '' ? formatRupiah(String(value)) : ''));
 
   useEffect(() => {
-    setDisplay(value ? formatRupiah(String(value)) : "");
+    setDisplay(value !== null && value !== undefined && value !== '' ? formatRupiah(String(value)) : '');
   }, [value]);
 
   function handleChange(e) {

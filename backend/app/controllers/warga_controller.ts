@@ -1,10 +1,11 @@
 import { HttpContext } from '@adonisjs/core/http'
-import cuid from 'cuid'
+import { v4 as uuid } from 'uuid'
 import WargaProfile from '#models/warga_profile'
 import Iuran from '#models/iuran'
 import Laporan from '#models/laporan'
 import SuratPengantar from '#models/surat_pengantar'
 import { validateNIK, validateKK } from '#utils/kependudukan'
+import { onboardingValidator, updateProfileValidator } from '#validators/warga_validator'
 
 export default class WargaController {
   /**
@@ -35,15 +36,7 @@ export default class WargaController {
         })
       }
 
-      const {
-        nama_lengkap,
-        nik,
-        kk,
-        no_hp,
-        alamat,
-        no_rumah,
-        status_huni,
-      } = request.only([
+      const { nama_lengkap, nik, kk, no_hp, alamat, no_rumah, status_huni } = await onboardingValidator.validate(request.only([
         'nama_lengkap',
         'nik',
         'kk',
@@ -51,41 +44,19 @@ export default class WargaController {
         'alamat',
         'no_rumah',
         'status_huni',
-      ])
+      ]))
 
-      // ✅ FIX: Trim & clean semua input
-      const cleanNik = (nik || '').toString().trim()
-      const cleanKk = (kk || '').toString().trim()
-      const cleanNama = (nama_lengkap || '').toString().trim()
-      const cleanNoHp = (no_hp || '').toString().trim()
-      const cleanAlamat = (alamat || '').toString().trim()
-      const cleanNoRumah = (no_rumah || '').toString().trim()
-
-      if (!cleanNama || !cleanNik || !cleanKk || !cleanNoHp || !cleanAlamat || !cleanNoRumah || !status_huni) {
-        return response.status(400).json({
-          success: false,
-          message: 'Semua field wajib diisi',
-        })
-      }
-
-      if (!['pemilik', 'penyewa', 'numpang'].includes(status_huni)) {
-        return response.status(400).json({
-          success: false,
-          message: 'Status huni tidak valid',
-        })
-      }
+      const cleanNik = nik.toString().trim()
+      const cleanKk = kk.toString().trim()
+      const cleanNama = nama_lengkap.toString().trim()
+      const cleanNoHp = no_hp.toString().trim()
+      const cleanAlamat = alamat.toString().trim()
+      const cleanNoRumah = no_rumah.toString().trim()
 
       if (cleanNik === cleanKk) {
         return response.status(400).json({
           success: false,
           message: 'NIK dan Nomor KK tidak boleh sama',
-        })
-      }
-
-      if (!/^\d{16}$/.test(cleanNik)) {
-        return response.status(400).json({
-          success: false,
-          message: `NIK harus 16 digit angka (diterima: ${cleanNik.length} digit)`,
         })
       }
 
@@ -97,25 +68,11 @@ export default class WargaController {
         })
       }
 
-      if (!/^\d{16}$/.test(cleanKk)) {
-        return response.status(400).json({
-          success: false,
-          message: 'Nomor KK harus 16 digit angka',
-        })
-      }
-
       const kkResult = validateKK(cleanKk)
       if (!kkResult.valid) {
         return response.status(400).json({
           success: false,
-          message: `Nomor KK tidak valid: ${kkResult.message}`,
-        })
-      }
-
-      if (!/^\d{10,15}$/.test(cleanNoHp.replace(/\D/g, ''))) {
-        return response.status(400).json({
-          success: false,
-          message: 'Nomor HP tidak valid',
+          message: `KK tidak valid: ${kkResult.message}`,
         })
       }
 
@@ -148,7 +105,7 @@ export default class WargaController {
           })
         }
 
-        fotoKtpUrl = `https://storage.example.com/ktp/${user.id}/${cuid()}.jpg`
+        fotoKtpUrl = `https://storage.example.com/ktp/${user.id}/${uuid()}.jpg`
       } else {
         return response.status(400).json({
           success: false,
@@ -243,23 +200,15 @@ export default class WargaController {
         })
       }
 
-      const { alamat, no_rumah, status_huni } = request.only([
+      const { alamat, no_rumah, status_huni } = await updateProfileValidator.validate(request.only([
         'alamat',
         'no_rumah',
         'status_huni',
-      ])
+      ]))
 
       if (alamat) profile.alamat = alamat
       if (no_rumah) profile.no_rumah = no_rumah
-      if (status_huni) {
-        if (!['pemilik', 'penyewa', 'numpang'].includes(status_huni)) {
-          return response.status(400).json({
-            success: false,
-            message: 'Status huni tidak valid',
-          })
-        }
-        profile.status_huni = status_huni
-      }
+      if (status_huni) profile.status_huni = status_huni
 
       await profile.save()
 

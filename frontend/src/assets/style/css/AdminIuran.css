@@ -518,12 +518,19 @@
   .ai-stats { grid-template-columns: repeat(2, 1fr); }
   .ai-stat__num { font-size: 1.3rem; }
   .ai-table th, .ai-table td { padding: 12px 14px; font-size: 0.8rem; }
+
+  .ai-table th:nth-child(2),
+  .ai-table td:nth-child(2) {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
   .ai-container { padding: var(--space-md); }
   .ai-header { flex-direction: column; gap: var(--space-md); }
+  .ai-header > div:last-child { width: 100%; flex-wrap: wrap; gap: 6px; }
   .ai-title { font-size: 1.6rem; }
+  .ai-period { width: 100%; }
   .ai-toolbar { flex-direction: column; align-items: stretch; }
   .ai-search { max-width: 100%; width: 100%; }
   .ai-stats { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
@@ -532,6 +539,11 @@
   .ai-modal { margin: var(--space-md); }
   .ai-modal__footer { flex-direction: column-reverse; }
   .ai-modal__footer button { width: 100%; justify-content: center; }
+
+  .ai-table th:nth-child(4),
+  .ai-table td:nth-child(4) {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -539,7 +551,28 @@
   .ai-subtitle { font-size: 0.8rem; }
   .ai-stats { grid-template-columns: 1fr; }
   .ai-stat__num { font-size: 1.1rem; }
+  .ai-header > div:last-child { flex-direction: column; align-items: stretch; }
+  .ai-header > div:last-child select { width: 100%; }
   .ai-btn { width: 100%; justify-content: center; }
   .ai-badge { padding: 2px 8px; font-size: 0.65rem; gap: 2px; }
   .ai-table th, .ai-table td { padding: 8px 8px; font-size: 0.72rem; }
+  .ai-table th:nth-child(8),
+  .ai-table td:nth-child(8) {
+    display: none;
+  }
+  .ai-pagination {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+}
+
+@media (max-width: 360px) {
+  .ai-container { padding: 12px; }
+  .ai-period { flex-direction: column; align-items: stretch; gap: 4px; width: 100%; }
+  .ai-period select { width: 100%; text-align: center; }
+  .ai-header > div:last-child select { width: 100%; }
+  .ai-title { font-size: 1.15rem; }
+  .ai-stats { gap: var(--space-xs); }
+  .ai-stat { padding: var(--space-sm); }
+  .ai-table th, .ai-table td { padding: 6px 4px; font-size: 0.65rem; }
 }

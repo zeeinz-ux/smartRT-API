@@ -624,6 +624,7 @@
   padding: 28px 28px;
   max-width: 1280px;
   width: 100%;
+  min-width: 0;
   animation: apl-fadeIn 0.25s ease;
 }
 

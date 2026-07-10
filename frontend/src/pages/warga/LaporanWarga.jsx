@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, X, ChevronLeft, ChevronRight, Send, Edit3, Clock, CheckCircle2, AlertCircle, Upload, Camera, Trash } from "lucide-react";
 import CameraCapture from "../../components/CameraCapture";
+import { formatDateTime } from "../../utils/formatDate.js";
 import "../../assets/style/css/LaporanWarga.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+import API_BASE_URL from "../../utils/api.js";
 
 export default function LaporanWarga() {
   const [data, setData] = useState([]);
@@ -210,7 +205,7 @@ export default function LaporanWarga() {
                 </div>
               )}
               <div className="lw-card__meta">
-                <span className="lw-card__date">{formatDate(item.created_at)}</span>
+                <span className="lw-card__date">{formatDateTime(item.created_at)}</span>
                 {item.status === "diproses" && (
                   <button className="lw-btn-edit" onClick={() => openEditModal(item)}>
                     <Edit3 size={14} /> Edit

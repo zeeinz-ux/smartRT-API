@@ -244,3 +244,17 @@
   .ad-header { flex-direction: column; }
   .ad-card__top { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
+
+/* ── Utilities ── */
+.text-primary { color: var(--clr-text-primary); }
+.text-secondary { color: var(--clr-text-secondary); }
+.text-muted { color: var(--clr-text-muted); }
+.text-sm { font-size: 0.85rem; }
+.text-xs { font-size: 0.75rem; }
+.text-center { text-align: center; }
+.fw-600 { font-weight: 600; }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.flex-center { display: flex; align-items: center; gap: 4px; }
+.modal-max-sm { max-width: 400px; }
+.btn-danger-bg { background: var(--clr-danger) !important; }

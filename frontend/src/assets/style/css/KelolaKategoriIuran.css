@@ -1,0 +1,261 @@
+/* ── Kelola Kategori Iuran ── */
+.ak-container {
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.ak-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.ak-header__left { display: flex; flex-direction: column; gap: 4px; }
+.ak-header__title { font-size: 1.5rem; font-weight: 700; color: var(--clr-title); }
+.ak-header__subtitle { font-size: 0.85rem; color: var(--clr-text-muted); }
+
+.ak-table-section { background: var(--surface, #fff); border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); overflow: hidden; }
+
+.ak-loading, .ak-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4rem 2rem; gap: var(--space-md); color: var(--clr-text-muted);
+}
+.ak-loading__spinner {
+  width: 36px; height: 36px; border: 3px solid var(--clr-border);
+  border-top-color: var(--clr-primary); border-radius: 50%; animation: ak-spin .6s linear infinite;
+}
+@keyframes ak-spin { to { transform: rotate(360deg); } }
+.ak-empty__icon { opacity: .4; }
+.ak-empty h3 { font-size: 1.1rem; font-weight: 600; color: var(--clr-text-secondary); }
+.ak-empty p { font-size: .85rem; }
+
+.ak-wrapper { overflow-x: auto; }
+
+.ak-table { width: 100%; border-collapse: collapse; }
+.ak-table th {
+  text-align: left; padding: 14px 16px; font-size: .8rem; font-weight: 600;
+  color: var(--clr-text-muted); text-transform: uppercase; letter-spacing: .05em;
+  background: var(--clr-bg-secondary, #f8f9fa); border-bottom: 1px solid var(--clr-border);
+}
+.ak-table td { padding: 14px 16px; font-size: .9rem; color: var(--clr-text-primary); border-bottom: 1px solid var(--clr-border); }
+.ak-row--inactive td { opacity: .5; }
+.ak-table__nama { font-weight: 600; }
+.ak-table__desk { color: var(--clr-text-secondary); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ak-table__nominal { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.ak-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px; font-size: .78rem; font-weight: 500;
+}
+.ak-badge--periode { background: var(--clr-bg-secondary, #f0f0f0); color: var(--clr-text-secondary); }
+.ak-badge--aktif { background: #e6f7e6; color: #2e7d32; }
+.ak-badge--nonaktif { background: #fde8e8; color: #c62828; }
+
+.ak-actions { display: flex; gap: 6px; }
+.ak-action-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border: none; border-radius: 8px;
+  background: var(--clr-bg-secondary, #f0f0f0); color: var(--clr-text-secondary);
+  cursor: pointer; transition: all .15s;
+}
+.ak-action-btn:hover { background: var(--clr-primary); color: #fff; }
+.ak-action-btn--delete:hover { background: var(--clr-danger, #dc2626); color: #fff; }
+
+.ak-nominal-input {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--clr-input-border, #cce8d8);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--clr-input-bg, #f7fbf8);
+  transition: all .15s;
+  overflow: hidden;
+}
+.ak-nominal-input:focus-within {
+  border-color: var(--clr-input-focus, #4a8c5c);
+  box-shadow: 0 0 0 3px rgba(74, 140, 92, 0.1);
+  background: #fff;
+}
+.ak-nominal-input__prefix {
+  padding: 0 0 0 12px;
+  font-size: .85rem;
+  color: var(--clr-text-muted, #8aa898);
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+.ak-nominal-input input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--clr-text-primary);
+  font-size: .85rem;
+  font-family: var(--font-body);
+  outline: none;
+  padding: 8px 12px;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .ak-table th,
+  .ak-table td {
+    padding: 12px 14px;
+    font-size: 0.82rem;
+  }
+
+  .ak-table th:nth-child(2),
+  .ak-table td:nth-child(2) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .ak-container {
+    padding: var(--space-md);
+  }
+
+  .ak-header {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .ak-header__title {
+    font-size: 1.3rem;
+  }
+
+  .ak-header__subtitle {
+    font-size: 0.8rem;
+  }
+
+  .ak-table th,
+  .ak-table td {
+    padding: 10px 12px;
+    font-size: 0.78rem;
+  }
+
+  .ak-table__desk {
+    max-width: 120px;
+  }
+
+  .ak-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ak-action-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  .modal {
+    margin: var(--space-md);
+    max-width: calc(100% - var(--space-xl));
+    max-height: calc(100vh - var(--space-xl));
+  }
+
+  .modal__footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal__footer button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal__body {
+    padding: var(--space-md);
+  }
+
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .ak-container {
+    padding: var(--space-sm) var(--space-sm);
+    gap: var(--space-md);
+  }
+
+  .ak-header__title {
+    font-size: 1.15rem;
+  }
+
+  .ak-header__subtitle {
+    font-size: 0.75rem;
+  }
+
+  .ak-table th,
+  .ak-table td {
+    padding: 8px 10px;
+    font-size: 0.72rem;
+  }
+
+  .ak-table__desk {
+    max-width: 80px;
+  }
+
+  .ak-badge {
+    padding: 2px 8px;
+    font-size: 0.65rem;
+  }
+
+  .ak-action-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .modal {
+    max-width: 100%;
+    margin: 0 var(--space-sm);
+    border-radius: var(--radius-lg, 16px);
+  }
+
+  .modal__header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .modal__header h2 {
+    font-size: 1rem;
+  }
+
+  .modal__footer {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .ak-table th:nth-child(3),
+  .ak-table td:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .ak-header__title {
+    font-size: 1rem;
+  }
+
+  .ak-table th,
+  .ak-table td {
+    padding: 6px 6px;
+    font-size: 0.68rem;
+  }
+
+  .modal {
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+
+  .ak-table th:nth-child(4),
+  .ak-table td:nth-child(4) {
+    display: none;
+  }
+}

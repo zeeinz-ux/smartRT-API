@@ -3,12 +3,28 @@ import { DateTime } from 'luxon'
 import app from '@adonisjs/core/services/app'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { storeSuratValidator, storeSuratAsAdminValidator } from '#validators/surat_validator'
 import QRCode from 'qrcode'
 import SuratPengantar from '#models/surat_pengantar'
 import SuratTemplate from '#models/surat_template'
 import User from '#models/user'
 
-let PdfPrinter: any = null
+interface PdfPrinterConstructor {
+  new (fonts: Record<string, unknown>, something: unknown, options: unknown): {
+    createPdfKitDocument(doc: TDocumentDefinition): import('pdfkit').PDFDocument
+  }
+}
+
+interface TDocumentDefinition {
+  pageSize: string
+  pageMargins: [number, number, number, number]
+  content: unknown[]
+  styles?: Record<string, unknown>
+  defaultStyle?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+let PdfPrinter: PdfPrinterConstructor | null = null
 async function getPdfPrinter() {
   if (!PdfPrinter) {
     // @ts-expect-error
@@ -85,11 +101,7 @@ export default class SuratController {
     try {
       if (!auth.user) return response.status(401).json({ success: false, message: 'Belum login' })
 
-      const { jenis_surat, keperluan, keterangan } = request.only(['jenis_surat', 'keperluan', 'keterangan'])
-
-      if (!jenis_surat || !keperluan) {
-        return response.status(400).json({ success: false, message: 'Jenis surat dan keperluan wajib diisi' })
-      }
+      const { jenis_surat, keperluan, keterangan } = await storeSuratValidator.validate(request.only(['jenis_surat', 'keperluan', 'keterangan']))
 
       const surat = await SuratPengantar.create({
         user_id: auth.user.id,
@@ -112,11 +124,7 @@ export default class SuratController {
         return response.status(403).json({ success: false, message: 'Akses ditolak' })
       }
 
-      const { user_id, jenis_surat, keperluan, keterangan } = request.only(['user_id', 'jenis_surat', 'keperluan', 'keterangan'])
-
-      if (!user_id || !jenis_surat || !keperluan) {
-        return response.status(400).json({ success: false, message: 'Warga, jenis surat, dan keperluan wajib diisi' })
-      }
+      const { user_id, jenis_surat, keperluan, keterangan } = await storeSuratAsAdminValidator.validate(request.only(['user_id', 'jenis_surat', 'keperluan', 'keterangan']))
 
       const warga = await User.find(user_id)
       if (!warga) return response.status(404).json({ success: false, message: 'Warga tidak ditemukan' })
@@ -290,9 +298,11 @@ export default class SuratController {
     const fonts = {
       Roboto: { normal: 'Helvetica', bold: 'Helvetica-Bold', italics: 'Helvetica-Oblique', bolditalics: 'Helvetica-BoldOblique' },
     }
-    const printer = new (await getPdfPrinter())(fonts, null, { resolve() {}, resolved() { return Promise.resolve() } })
+    const PrinterClass = await getPdfPrinter()
+    if (!PrinterClass) throw new Error('Failed to load PDF printer')
+    const printer = new PrinterClass(fonts, null, { resolve() {}, resolved() { return Promise.resolve() } })
 
-    const docDefinition: any = {
+    const docDefinition: TDocumentDefinition = {
       pageSize: 'A4',
       pageMargins: [60, 60, 60, 60],
       content: [

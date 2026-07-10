@@ -3,6 +3,7 @@ import { DateTime } from 'luxon'
 import EmergencyAlert from '#models/emergency_alert'
 import User from '#models/user'
 import Notifikasi from '#models/notifikasi'
+import { storeDaruratValidator } from '#validators/darurat_validator'
 
 export default class DaruratController {
   /**
@@ -14,19 +15,12 @@ export default class DaruratController {
         return response.status(401).json({ success: false, message: 'Belum login' })
       }
 
-      const { latitude, longitude, keterangan } = request.only(['latitude', 'longitude', 'keterangan'])
-
-      if (!latitude || !longitude) {
-        return response.status(400).json({
-          success: false,
-          message: 'Lokasi tidak ditemukan. Aktifkan GPS dan coba lagi.',
-        })
-      }
+      const { latitude, longitude, keterangan } = await storeDaruratValidator.validate(request.only(['latitude', 'longitude', 'keterangan']))
 
       const alert = await EmergencyAlert.create({
         user_id: auth.user.id,
-        latitude,
-        longitude,
+        latitude: Number(latitude),
+        longitude: Number(longitude),
         keterangan: keterangan || null,
         status: 'active',
       })

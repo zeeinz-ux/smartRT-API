@@ -1,12 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import env from '#start/env'
-import { google } from 'googleapis'
+import { google, sheets_v4 } from 'googleapis'
 import { JWT } from 'google-auth-library'
 
 class GoogleSheetsService {
-  private auth: any = null
-  private sheets: any = null
+  private auth: JWT | null = null
+  private sheets: sheets_v4.Sheets | null = null
   private spreadsheetId: string = ''
   private initialized: boolean = false
 
@@ -43,6 +43,11 @@ class GoogleSheetsService {
     return this.initialized && this.sheets !== null
   }
 
+  private get api(): sheets_v4.Sheets {
+    if (!this.sheets) throw new Error('Google Sheets not initialized')
+    return this.sheets
+  }
+
   /**
    * Cari row index berdasarkan UUID (kolom B)
    */
@@ -50,7 +55,7 @@ class GoogleSheetsService {
     if (!this.isAvailable()) return null
 
     try {
-      const response = await this.sheets.spreadsheets.values.get({
+      const response = await this.api.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
         range: 'Data Warga!B:B',
       })
@@ -75,7 +80,7 @@ class GoogleSheetsService {
     if (!this.isAvailable()) return '001'
 
     try {
-      const response = await this.sheets.spreadsheets.values.get({
+      const response = await this.api.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
         range: 'Data Warga!A:A',
       })
@@ -142,7 +147,7 @@ class GoogleSheetsService {
         new Date().toISOString(),
       ]
 
-      await this.sheets.spreadsheets.values.append({
+      await this.api.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: 'Data Warga!A2',
         valueInputOption: 'RAW',
@@ -202,7 +207,7 @@ class GoogleSheetsService {
         })
       }
 
-      const oldData = await this.sheets.spreadsheets.values.get({
+      const oldData = await this.api.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
         range: `Data Warga!A${rowIndex}:N${rowIndex}`,
       })
@@ -225,7 +230,7 @@ class GoogleSheetsService {
         new Date().toISOString(),
       ]
 
-      await this.sheets.spreadsheets.values.update({
+      await this.api.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: `Data Warga!A${rowIndex}:N${rowIndex}`,
         valueInputOption: 'USER_ENTERED',
@@ -257,7 +262,7 @@ class GoogleSheetsService {
       }
 
       const emptyRow = Array(14).fill('')
-      await this.sheets.spreadsheets.values.update({
+      await this.api.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: `Data Warga!A${rowIndex}:N${rowIndex}`,
         valueInputOption: 'USER_ENTERED',
@@ -303,7 +308,7 @@ class GoogleSheetsService {
         new Date().toISOString(),
       ]
 
-      await this.sheets.spreadsheets.values.append({
+      await this.api.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: `${sheetTitle}!A2`,
         valueInputOption: 'USER_ENTERED',
@@ -327,7 +332,7 @@ class GoogleSheetsService {
 
     try {
       const headers = [['ID', 'Warga', 'Keterangan', 'Jumlah', 'Status', 'Metode', 'Tanggal Bayar', 'Timestamp Sync']]
-      await this.sheets.spreadsheets.values.update({
+      await this.api.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: 'Iuran Sampah!A1:H1',
         valueInputOption: 'USER_ENTERED',
@@ -371,7 +376,7 @@ class GoogleSheetsService {
         new Date().toISOString(),
       ]
 
-      await this.sheets.spreadsheets.values.append({
+      await this.api.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: `${sheetTitle}!A2`,
         valueInputOption: 'USER_ENTERED',
@@ -395,7 +400,7 @@ class GoogleSheetsService {
 
     try {
       const headers = [['ID', 'Warga', 'Keterangan', 'Jumlah', 'Status', 'Metode', 'Tanggal Bayar', 'Timestamp Sync']]
-      await this.sheets.spreadsheets.values.update({
+      await this.api.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: 'Iuran Qurban!A1:H1',
         valueInputOption: 'USER_ENTERED',
@@ -442,7 +447,7 @@ class GoogleSheetsService {
         new Date().toISOString(),
       ]
 
-      await this.sheets.spreadsheets.values.append({
+      await this.api.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: `${sheetTitle}!A2`,
         valueInputOption: 'USER_ENTERED',
@@ -466,7 +471,7 @@ class GoogleSheetsService {
 
     try {
       const headers = [['ID', 'Warga', 'Kategori ID', 'Periode', 'Jumlah', 'Status', 'Metode', 'Tanggal Bayar', 'Timestamp Sync']]
-      await this.sheets.spreadsheets.values.update({
+      await this.api.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: 'Iuran!A1:I1',
         valueInputOption: 'USER_ENTERED',
@@ -486,7 +491,7 @@ class GoogleSheetsService {
     try {
       const headers = [['No', 'UUID', 'Nama', 'Email', 'No HP', 'NIK', 'KK', 'Alamat', 'No Rumah', 'Status Huni', 'Status Verifikasi', 'Terverifikasi', 'Diverifikasi Oleh', 'Timestamp Sync']]
 
-      await this.sheets.spreadsheets.values.update({
+      await this.api.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: 'Data Warga!A1:N1',
         valueInputOption: 'USER_ENTERED',
@@ -494,7 +499,7 @@ class GoogleSheetsService {
       })
 
       // Format kolom A (No) sebagai plain text biar 001 tidak jadi 1
-      await this.sheets.spreadsheets.batchUpdate({
+      await this.api.spreadsheets.batchUpdate({
         spreadsheetId: this.spreadsheetId,
         requestBody: {
           requests: [

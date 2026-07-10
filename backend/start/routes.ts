@@ -3,8 +3,7 @@ import { middleware } from './kernel.js'
 import AuthController from '#controllers/auth_controller'
 import WargaController from '#controllers/warga_controller'
 import AdminController from '#controllers/admin_controller'
-import SampahController from '#controllers/sampah_controller'
-import QurbanController from '#controllers/qurban_controller'
+import IuranPaymentController from '#controllers/iuran_payment_controller'
 import KeuanganController from '#controllers/keuangan_controller'
 import LaporanController from '#controllers/laporan_controller'
 import PengumumanController from '#controllers/pengumuman_controller'
@@ -50,6 +49,8 @@ router.group(() => {
   // Tagihan warga
   router.get('/warga/tagihan', [IuranController, 'tagihanSaya']).as('warga.tagihan')
   router.patch('/warga/tagihan/:id/bayar', [IuranController, 'wargaBayar']).as('warga.tagihan.bayar')
+  router.post('/warga/tagihan/:id/bayar-cicilan', [IuranController, 'bayarCicilanWarga']).as('warga.tagihan.bayar-cicilan')
+  router.get('/warga/tagihan/:id/payments', [IuranController, 'riwayatPembayaranWarga']).as('warga.tagihan.payments')
 
   // Payment settings (warga — read only)
   router.get('/warga/payment-settings', [PaymentSettingController, 'show']).as('warga.payment-settings')
@@ -84,17 +85,18 @@ router.group(() => {
   router.post('/admin/warga/:id/verify', [AdminController, 'verifyWarga'])
   router.post('/admin/warga/:id/reject', [AdminController, 'rejectWarga'])
 
-  // Iuran Sampah
-  router.get('/admin/sampah', [SampahController, 'index'])
-  router.post('/admin/sampah', [SampahController, 'store'])
-  router.patch('/admin/sampah/:id', [SampahController, 'update'])
-  router.delete('/admin/sampah/:id', [SampahController, 'destroy'])
+  // Iuran Sampah & Qurban (generic controller)
+  const sampahCtrl = IuranPaymentController.forSampah()
+  router.get('/admin/sampah', (ctx) => sampahCtrl.index(ctx))
+  router.post('/admin/sampah', (ctx) => sampahCtrl.store(ctx))
+  router.patch('/admin/sampah/:id', (ctx) => sampahCtrl.update(ctx))
+  router.delete('/admin/sampah/:id', (ctx) => sampahCtrl.destroy(ctx))
 
-  // Iuran Qurban
-  router.get('/admin/qurban', [QurbanController, 'index'])
-  router.post('/admin/qurban', [QurbanController, 'store'])
-  router.patch('/admin/qurban/:id', [QurbanController, 'update'])
-  router.delete('/admin/qurban/:id', [QurbanController, 'destroy'])
+  const qurbanCtrl = IuranPaymentController.forQurban()
+  router.get('/admin/qurban', (ctx) => qurbanCtrl.index(ctx))
+  router.post('/admin/qurban', (ctx) => qurbanCtrl.store(ctx))
+  router.patch('/admin/qurban/:id', (ctx) => qurbanCtrl.update(ctx))
+  router.delete('/admin/qurban/:id', (ctx) => qurbanCtrl.destroy(ctx))
 
   // Kategori Iuran
   router.get('/admin/kategori-iuran', [KategoriIuranController, 'index'])
@@ -112,6 +114,10 @@ router.group(() => {
   router.post('/admin/iuran/:id/reject', [IuranController, 'reject'])
   router.patch('/admin/iuran/:id', [IuranController, 'update'])
   router.delete('/admin/iuran/:id', [IuranController, 'destroy'])
+  router.post('/admin/iuran/:id/bayar', [IuranController, 'bayarCicilan'])
+  router.get('/admin/iuran/:id/payments', [IuranController, 'riwayatPembayaran'])
+  router.post('/admin/iuran/:id/approve-cicilan/:paymentId', [IuranController, 'approveCicilan'])
+  router.post('/admin/iuran/:id/reject-cicilan/:paymentId', [IuranController, 'rejectCicilan'])
 
   // Payment Settings
   router.get('/admin/payment-settings', [PaymentSettingController, 'index']).as('admin.payment-settings.index')

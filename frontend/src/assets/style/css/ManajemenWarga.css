@@ -1077,6 +1077,8 @@
   .mw-filter-group {
     overflow-x: auto;
     padding-bottom: var(--space-xs);
+    -webkit-overflow-scrolling: touch;
+    gap: var(--space-sm);
   }
 
   .mw-table th,
@@ -1162,8 +1164,32 @@
     font-size: 0.82rem;
   }
 
+  .mw-header__right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mw-header__right button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .mw-actions {
     flex-wrap: wrap;
+  }
+
+  .mw-filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mw-filter {
+    width: 100%;
+  }
+
+  .mw-filter select {
+    width: 100%;
   }
 
   .mw-table-wrapper {
@@ -1222,8 +1248,16 @@
 }
 
 @media (max-width: 360px) {
+  .manajemen-warga {
+    padding: 12px;
+  }
+
   .mw-header__title {
     font-size: 1.15rem;
+  }
+
+  .mw-header__subtitle {
+    font-size: 0.75rem;
   }
 
   .detail-grid {
@@ -1245,6 +1279,18 @@
   .mw-table th:nth-child(5),
   .mw-table td:nth-child(5) {
     display: none;
+  }
+
+  .mw-warga-cell__avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .mw-pagination__btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
   }
 }
 

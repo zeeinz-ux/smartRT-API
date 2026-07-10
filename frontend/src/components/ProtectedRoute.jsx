@@ -1,8 +1,7 @@
 // src/components/ProtectedRoute.jsx
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
+import API_BASE_URL from "../utils/api.js";
 
 // Cache auth di module level biar gak fetch ulang tiap ganti route
 let cachedUser = null;

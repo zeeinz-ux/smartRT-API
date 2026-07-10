@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { AlertTriangle, Phone, MapPin, Loader, X } from "lucide-react";
 import "../assets/style/css/EmergencyFab.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
+import API_BASE_URL from "../utils/api.js";
 
 export default function EmergencyFab({ user }) {
   const [showModal, setShowModal] = useState(false);

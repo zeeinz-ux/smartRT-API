@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Camera } from "lucide-react";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
+import API_BASE_URL from "../utils/api.js";
 
 export default function CameraCapture({ onCapture, onClose }) {
   const videoRef = useRef(null);

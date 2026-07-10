@@ -32,6 +32,33 @@ export class EmergencyAlertSchema extends BaseModel {
   declare userId: string
 }
 
+export class IuranPaymentSchema extends BaseModel {
+  static $columns = ['adminId', 'createdAt', 'id', 'iuranId', 'jumlah', 'keterangan', 'metodePembayaran', 'paidAt', 'status', 'updatedAt', 'wargaId'] as const
+  $columns = IuranPaymentSchema.$columns
+  @column()
+  declare adminId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare iuranId: string
+  @column()
+  declare jumlah: string
+  @column()
+  declare keterangan: string | null
+  @column()
+  declare metodePembayaran: string | null
+  @column.dateTime()
+  declare paidAt: DateTime
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare wargaId: string | null
+}
+
 export class IuranQurbanSchema extends BaseModel {
   static $columns = ['bulan', 'createdAt', 'id', 'jumlah', 'keterangan', 'metodePembayaran', 'paidAt', 'status', 'tahun', 'updatedAt', 'wargaId'] as const
   $columns = IuranQurbanSchema.$columns
@@ -87,7 +114,7 @@ export class IuranSampahSchema extends BaseModel {
 }
 
 export class IuranSchema extends BaseModel {
-  static $columns = ['buktiPembayaranUrl', 'bulan', 'createdAt', 'id', 'jumlah', 'kategoriId', 'keterangan', 'metodePembayaran', 'paidAt', 'rejectionReason', 'status', 'tahun', 'updatedAt', 'verifiedAt', 'verifiedBy', 'wargaId'] as const
+  static $columns = ['buktiPembayaranUrl', 'bulan', 'createdAt', 'id', 'jumlah', 'kategoriId', 'keterangan', 'metodePembayaran', 'paidAt', 'rejectionReason', 'sisa', 'status', 'tahun', 'updatedAt', 'verifiedAt', 'verifiedBy', 'wargaId'] as const
   $columns = IuranSchema.$columns
   @column()
   declare buktiPembayaranUrl: string | null
@@ -109,6 +136,8 @@ export class IuranSchema extends BaseModel {
   declare paidAt: DateTime | null
   @column()
   declare rejectionReason: string | null
+  @column()
+  declare sisa: string
   @column()
   declare status: string
   @column()

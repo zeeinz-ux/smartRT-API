@@ -4,22 +4,23 @@ import User from '#models/user'
 import WargaProfile from '#models/warga_profile'
 import db from '@adonisjs/lucid/services/db'
 import GoogleSheetsService from '#services/google_sheets'
+import BaseController from './base_controller.js'
+import { createWargaValidator, updateWargaValidator } from '#validators/admin_validator'
 
-export default class AdminController {
+export default class AdminController extends BaseController {
   /**
    * GET /api/admin/warga
    * List semua warga dengan filter, search, pagination
    */
   async listWarga({ request, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || (admin.role !== 'admin' && admin.role !== 'bendahara')) {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!this.requireAdminOrBendahara(auth.user)) {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'List warga', async () => {
       const { search, status, verification_status, status_huni, role, page = 1, limit = 10 } = request.qs()
 
       let query = db.from('users')
@@ -95,7 +96,7 @@ export default class AdminController {
 
       const wargaList = await query.limit(limit).offset((page - 1) * limit)
 
-      return response.json({
+      return {
         success: true,
         data: wargaList,
         pagination: {
@@ -104,30 +105,22 @@ export default class AdminController {
           total,
           totalPages: Math.ceil(total / Number(limit)),
         },
-      })
-    } catch (error) {
-      console.error('List warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan saat mengambil data warga',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      })
-    }
+      }
+    })
   }
 
   /**
    * GET /api/admin/warga/:id
    */
   async detailWarga({ params, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!auth.user || auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Detail warga', async () => {
       const warga = await db.from('users')
         .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
         .select(
@@ -154,38 +147,33 @@ export default class AdminController {
         .first()
 
       if (!warga) {
-        return response.status(404).json({
+        response.status(404)
+        return {
           success: false,
           message: 'Warga tidak ditemukan',
-        })
+        }
       }
 
-      return response.json({
+      return {
         success: true,
         data: warga,
-      })
-    } catch (error) {
-      console.error('Detail warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan',
-      })
-    }
+      }
+    })
   }
 
   /**
    * POST /api/admin/warga/:id/verify
    */
   async verifyWarga({ params, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    const admin = auth.user
+    if (!admin || admin.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Verify warga', async () => {
       const profile = await WargaProfile.findOrFail(params.id)
       const user = await User.findOrFail(profile.user_id)
 
@@ -197,7 +185,7 @@ export default class AdminController {
       user.status = 'active'
       await user.save()
 
-      try {
+      await this.syncGoogleSheets(async () => {
         await GoogleSheetsService.updateWarga(user.id, {
           nama: user.nama,
           email: user.email,
@@ -211,11 +199,9 @@ export default class AdminController {
           verified_at: profile.verified_at?.toISO() || null,
           verified_by: profile.verified_by,
         })
-      } catch (sheetError) {
-        console.error('Google Sheets sync error (non-critical):', sheetError)
-      }
+      })
 
-      return response.json({
+      return {
         success: true,
         message: `Warga ${user.nama} berhasil diverifikasi`,
         data: {
@@ -223,29 +209,23 @@ export default class AdminController {
           verification_status: profile.verification_status,
           verified_at: profile.verified_at,
         },
-      })
-    } catch (error) {
-      console.error('Verify warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan saat verifikasi',
-      })
-    }
+      }
+    })
   }
 
   /**
    * POST /api/admin/warga/:id/reject
    */
   async rejectWarga({ params, request, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    const admin = auth.user
+    if (!admin || admin.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Reject warga', async () => {
       const { reason } = request.only(['reason'])
 
       const profile = await WargaProfile.findOrFail(params.id)
@@ -260,7 +240,7 @@ export default class AdminController {
       user.status = 'suspended'
       await user.save()
 
-      return response.json({
+      return {
         success: true,
         message: `Verifikasi warga ${user.nama} ditolak`,
         data: {
@@ -268,14 +248,8 @@ export default class AdminController {
           verification_status: profile.verification_status,
           rejection_reason: profile.rejection_reason,
         },
-      })
-    } catch (error) {
-      console.error('Reject warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan saat menolak verifikasi',
-      })
-    }
+      }
+    })
   }
 
   /**
@@ -283,56 +257,40 @@ export default class AdminController {
    * Tambah akun warga basic oleh admin. Warga lanjut onboarding isi profil sendiri.
    */
   async createWarga({ request, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!auth.user || auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
-      const { nama, email, no_hp, password, role } = request.only([
-        'nama',
-        'email',
-        'no_hp',
-        'password',
-        'role',
-      ])
+    const { nama, email, no_hp, password, role } = await createWargaValidator.validate(request.only([
+      'nama',
+      'email',
+      'no_hp',
+      'password',
+      'role',
+    ]))
 
-      if (!nama || !email || !password || !no_hp) {
-        return response.status(400).json({
-          success: false,
-          message: 'Nama, email, no. HP, dan password wajib diisi',
-        })
-      }
+    const selectedRole = (role && ['warga', 'bendahara', 'admin'].includes(role)) ? role : 'warga'
 
-      const validRoles = ['warga', 'bendahara', 'admin']
-      const selectedRole = role && validRoles.includes(role) ? role : 'warga'
+    if (selectedRole === 'admin' && auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Hanya admin utama yang bisa membuat akun admin',
+      })
+    }
 
-      if (selectedRole === 'admin' && admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Hanya admin utama yang bisa membuat akun admin',
-        })
-      }
+    const cleanNoHp = no_hp.toString().trim()
+    const existingEmail = await User.findBy('email', email.toLowerCase())
+    if (existingEmail) {
+      return response.status(409).json({
+        success: false,
+        message: 'Email sudah terdaftar',
+      })
+    }
 
-      const cleanNoHp = (no_hp || '').toString().trim()
-      if (!/^\d{10,15}$/.test(cleanNoHp.replace(/\D/g, ''))) {
-        return response.status(400).json({
-          success: false,
-          message: 'Nomor HP tidak valid',
-        })
-      }
-
-      const existingEmail = await User.findBy('email', email.toLowerCase())
-      if (existingEmail) {
-        return response.status(409).json({
-          success: false,
-          message: 'Email sudah terdaftar',
-        })
-      }
-
+    return this.safeExecute(response, 'Create warga', async () => {
       const isWarga = selectedRole === 'warga'
       const user = await User.create({
         email: email.toLowerCase(),
@@ -343,7 +301,7 @@ export default class AdminController {
         status: isWarga ? 'pending' : 'active',
       })
 
-      try {
+      await this.syncGoogleSheets(async () => {
         await GoogleSheetsService.appendWarga({
           id: user.id,
           nama: user.nama,
@@ -358,11 +316,10 @@ export default class AdminController {
           verified_at: null,
           verified_by: null,
         })
-      } catch (sheetError) {
-        console.error('Google Sheets sync error (non-critical):', sheetError)
-      }
+      })
 
-      return response.status(201).json({
+      response.status(201)
+      return {
         success: true,
         message: isWarga
           ? 'Akun warga berhasil dibuat. Warga harus login dan mengisi profil untuk mengaktifkan akun.'
@@ -373,30 +330,22 @@ export default class AdminController {
           email: user.email,
           role: selectedRole,
         },
-      })
-    } catch (error) {
-      console.error('Create warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan saat menambah warga',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      })
-    }
+      }
+    })
   }
 
   /**
    * PATCH /api/admin/warga/:id
    */
   async updateWarga({ params, request, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!auth.user || auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Update warga', async () => {
       const user = await User.findOrFail(params.id)
       const profile = await WargaProfile.findBy('user_id', user.id)
 
@@ -407,14 +356,14 @@ export default class AdminController {
         no_rumah,
         status_huni,
         user_status,
-      } = request.only([
+      } = await updateWargaValidator.validate(request.only([
         'nama',
         'no_hp',
         'alamat',
         'no_rumah',
         'status_huni',
         'user_status',
-      ])
+      ]))
 
       if (nama) user.nama = nama
       if (no_hp) user.no_hp = no_hp
@@ -428,7 +377,7 @@ export default class AdminController {
         await profile.save()
       }
 
-      try {
+      await this.syncGoogleSheets(async () => {
         await GoogleSheetsService.updateWarga(user.id, {
           nama: nama || undefined,
           no_hp: no_hp || undefined,
@@ -438,25 +387,17 @@ export default class AdminController {
             status_huni: status_huni || undefined,
           } : {}),
         })
-      } catch (sheetError) {
-        console.error('Google Sheets update error (non-critical):', sheetError)
-      }
+      })
 
-      return response.json({
+      return {
         success: true,
         message: 'Data warga berhasil diupdate',
         data: {
           id: user.id,
           nama: user.nama,
         },
-      })
-    } catch (error) {
-      console.error('Update warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan saat update warga',
-      })
-    }
+      }
+    })
   }
 
   /**
@@ -464,47 +405,35 @@ export default class AdminController {
    * Hard delete — hapus permanen user + profile dari database
    */
   async deleteWarga({ params, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!auth.user || auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Delete warga', async () => {
       const user = await User.findOrFail(params.id)
       const nama = user.nama
 
-      // Hapus iuran terkait
       await db.from('iurans').where('warga_id', user.id).delete()
 
-      // Hapus profile jika ada
       const profile = await WargaProfile.findBy('user_id', user.id)
       if (profile) {
         await profile.delete()
       }
 
-      try {
+      await this.syncGoogleSheets(async () => {
         await GoogleSheetsService.deleteWarga(user.id)
-      } catch (sheetError) {
-        console.error('Google Sheets delete error (non-critical):', sheetError)
-      }
+      })
 
-      // Hapus user
       await user.delete()
 
-      return response.json({
+      return {
         success: true,
         message: `Warga ${nama} berhasil dihapus permanen`,
-      })
-    } catch (error) {
-      console.error('Delete warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan saat menghapus warga',
-      })
-    }
+      }
+    })
   }
 
   /**
@@ -512,15 +441,14 @@ export default class AdminController {
    * Soft deactivate — nonaktifkan akun tanpa hapus data
    */
   async deactivateWarga({ params, auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!auth.user || auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Deactivate warga', async () => {
       const user = await User.findOrFail(params.id)
 
       user.status = 'suspended'
@@ -528,52 +456,41 @@ export default class AdminController {
 
       const profile = await WargaProfile.findBy('user_id', user.id)
       if (profile) {
-        try {
+        await this.syncGoogleSheets(async () => {
           await GoogleSheetsService.deleteWarga(user.id)
-        } catch (sheetError) {
-          console.error('Google Sheets sync error (non-critical):', sheetError)
-        }
+        })
       }
 
-      return response.json({
+      return {
         success: true,
         message: `Warga ${user.nama} berhasil dinonaktifkan`,
-      })
-    } catch (error) {
-      console.error('Deactivate warga error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan saat menonaktifkan warga',
-      })
-    }
+      }
+    })
   }
 
   /**
    * GET /api/admin/dashboard
    */
   async dashboard({ auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!auth.user || auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Dashboard', async () => {
       const [{ total: totalWarga }] = await db.from('users').where('role', 'warga').count('* as total')
       const [{ total: wargaPending }] = await db.from('warga_profiles').where('verification_status', 'pending').count('* as total')
       const [{ total: wargaVerified }] = await db.from('warga_profiles').where('verification_status', 'verified').count('* as total')
       const [{ total: wargaRejected }] = await db.from('warga_profiles').where('verification_status', 'rejected').count('* as total')
 
-      // Warga yang belum onboarding (ada di users tapi belum punya profile)
       const [{ total: wargaNonOnboarded }] = await db.from('users')
         .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
         .where('users.role', 'warga')
         .whereNull('warga_profiles.id')
         .count('* as total')
 
-      // Iuran stats
       const now = DateTime.now()
       const [{ total: iuranPending }] = await db.from('iurans').where('status', 'pending').count('* as total')
       const [{ total: iuranBulanIni }] = await db.from('iurans')
@@ -584,8 +501,7 @@ export default class AdminController {
       const [{ total: totalWargaWithIuran }] = await db.from('iurans')
         .where('bulan', now.month)
         .where('tahun', now.year)
-        .distinct('warga_id')
-        .count('* as total')
+        .countDistinct('warga_id as total')
       const [{ sum: totalTunggakan }] = await db.from('iurans')
         .whereIn('status', ['belum_lunas', 'pending'])
         .sum('jumlah as sum')
@@ -597,7 +513,6 @@ export default class AdminController {
         .orderBy('warga_profiles.created_at', 'desc')
         .limit(5)
 
-      // Warga belum onboarding — terbaru
       const recentNonOnboarded = await db.from('users')
         .leftJoin('warga_profiles', 'warga_profiles.user_id', 'users.id')
         .select('users.id', 'users.nama', 'users.email', 'users.created_at')
@@ -610,7 +525,7 @@ export default class AdminController {
         ? Math.round((Number(iuranBulanIni) / Number(totalWargaWithIuran)) * 100)
         : 0
 
-      return response.json({
+      return {
         success: true,
         stats: {
           totalWarga: Number(totalWarga || 0),
@@ -624,48 +539,36 @@ export default class AdminController {
         },
         recentPending,
         recentNonOnboarded,
-      })
-    } catch (error) {
-      console.error('Dashboard error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan',
-      })
-    }
+      }
+    })
   }
 
   /**
    * POST /api/admin/sheets/setup
    */
   async setupSheets({ auth, response }: HttpContext) {
-    try {
-      const admin = auth.user
-      if (!admin || admin.role !== 'admin') {
-        return response.status(403).json({
-          success: false,
-          message: 'Akses ditolak.',
-        })
-      }
+    if (!auth.user || auth.user.role !== 'admin') {
+      return response.status(403).json({
+        success: false,
+        message: 'Akses ditolak.',
+      })
+    }
 
+    return this.safeExecute(response, 'Setup sheets', async () => {
       const success = await GoogleSheetsService.setupHeaders()
         
       if (success) {
-        return response.json({
+        return {
           success: true,
           message: 'Spreadsheet headers berhasil di-setup',
-        })
+        }
       } else {
-        return response.status(500).json({
+        response.status(500)
+        return {
           success: false,
           message: 'Gagal setup spreadsheet. Cek konfigurasi Google Sheets.',
-        })
+        }
       }
-    } catch (error) {
-      console.error('Setup sheets error:', error)
-      return response.status(500).json({
-        success: false,
-        message: 'Terjadi kesalahan',
-      })
-    }
+    })
   }
 }

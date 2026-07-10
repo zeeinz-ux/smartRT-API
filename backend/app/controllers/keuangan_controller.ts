@@ -2,6 +2,37 @@ import { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import db from '@adonisjs/lucid/services/db'
 import Pengeluaran from '#models/pengeluaran'
+import { storePengeluaranValidator, updatePengeluaranValidator } from '#validators/keuangan_validator'
+
+interface IuranRow {
+  id: string
+  warga_id: string
+  kategori_id: string
+  bulan: number | null
+  tahun: number
+  jumlah: number
+  status: string
+  paid_at: Date | null
+  created_at: Date
+  kategori_nama: string
+}
+
+interface MutasiItem {
+  id: string
+  tipe: 'pemasukan' | 'pengeluaran'
+  kategori: string
+  nama: string
+  jumlah: number
+  tanggal: Date | string | null
+  warga_id?: string
+  keterangan?: string | null
+}
+
+interface ChartKategoriItem {
+  kategori: string
+  total: number
+  jumlah: number
+}
 
 export default class KeuanganController {
   /**
@@ -25,8 +56,8 @@ export default class KeuanganController {
       }
       iuranQuery = iuranQuery.where('iurans.tahun', tahun).where('iurans.status', 'lunas')
         .select('iurans.*', 'kategori_iurans.nama as kategori_nama')
-      const iuranRows = await iuranQuery
-      const totalPemasukan = iuranRows.reduce((sum: number, r: any) => sum + Number(r.jumlah), 0)
+      const iuranRows = (await iuranQuery) as IuranRow[]
+      const totalPemasukan = iuranRows.reduce((sum, r) => sum + Number(r.jumlah), 0)
 
       // Breakdown per kategori
       const pemasukanByKategori: Record<string, number> = {}
@@ -45,7 +76,7 @@ export default class KeuanganController {
       const totalPengeluaran = pengeluaranRows.reduce((sum: number, p) => sum + Number(p.jumlah), 0)
 
       // Mutasi — gabung pemasukan & pengeluaran
-      const mutasi: any[] = []
+      const mutasi: MutasiItem[] = []
 
       for (const r of iuranRows) {
         mutasi.push({
@@ -71,7 +102,7 @@ export default class KeuanganController {
         })
       }
 
-      mutasi.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
+      mutasi.sort((a, b) => new Date(b.tanggal ?? 0).getTime() - new Date(a.tanggal ?? 0).getTime())
 
       // ── Chart data: pemasukan & pengeluaran per bulan ──
       const allIuranYear = await db.from('iurans').where('tahun', tahun).where('status', 'lunas')
@@ -97,13 +128,13 @@ export default class KeuanganController {
       }))
 
       // ── Chart data: pengeluaran per kategori ──
-      const chartKategoriRaw: any[] = await Pengeluaran.query()
+      const chartKategoriRaw = await Pengeluaran.query()
         .whereRaw('EXTRACT(YEAR FROM tanggal) = ?', [tahun])
         .select('kategori')
         .select(db.rawQuery('SUM(jumlah) as total').knexQuery)
-        .groupBy('kategori')
+        .groupBy('kategori') as unknown as ChartKategoriItem[]
 
-      const chartKategori = chartKategoriRaw.map((r: any) => ({
+      const chartKategori = chartKategoriRaw.map((r) => ({
         kategori: r.kategori,
         jumlah: Number(r.total),
       }))
@@ -179,22 +210,15 @@ export default class KeuanganController {
         return response.status(403).json({ success: false, message: 'Akses ditolak' })
       }
 
-      const { nama, jumlah, kategori, tanggal, keterangan } = request.only([
+      const { nama, jumlah, kategori, tanggal, keterangan } = await storePengeluaranValidator.validate(request.only([
         'nama', 'jumlah', 'kategori', 'tanggal', 'keterangan',
-      ])
-
-      if (!nama || jumlah === undefined || !tanggal) {
-        return response.status(400).json({
-          success: false,
-          message: 'nama, jumlah, dan tanggal wajib diisi',
-        })
-      }
+      ]))
 
       const pengeluaran = await Pengeluaran.create({
         nama,
-        jumlah: Number(jumlah),
+        jumlah,
         kategori: kategori || 'Lainnya',
-        tanggal: DateTime.fromISO(tanggal),
+        tanggal,
         keterangan: keterangan || null,
         created_by: auth.user.id,
       })
@@ -220,14 +244,14 @@ export default class KeuanganController {
       }
 
       const pengeluaran = await Pengeluaran.findOrFail(params.id)
-      const { nama, jumlah, kategori, tanggal, keterangan } = request.only([
+      const { nama, jumlah, kategori, tanggal, keterangan } = await updatePengeluaranValidator.validate(request.only([
         'nama', 'jumlah', 'kategori', 'tanggal', 'keterangan',
-      ])
+      ]))
 
       if (nama !== undefined) pengeluaran.nama = nama
-      if (jumlah !== undefined) pengeluaran.jumlah = Number(jumlah)
+      if (jumlah !== undefined) pengeluaran.jumlah = jumlah
       if (kategori !== undefined) pengeluaran.kategori = kategori
-      if (tanggal !== undefined) pengeluaran.tanggal = DateTime.fromISO(tanggal)
+      if (tanggal !== undefined) pengeluaran.tanggal = tanggal
       if (keterangan !== undefined) pengeluaran.keterangan = keterangan
 
       await pengeluaran.save()

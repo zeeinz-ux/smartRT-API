@@ -4,15 +4,10 @@ import {
   Wallet, TrendingUp, TrendingDown, BarChart3, PieChart,
   ArrowUpRight, ArrowDownRight, Download, Loader,
 } from "lucide-react";
+import { rupiah } from "../../utils/rupiah.js";
 import "../../assets/style/css/AdminDashboard.css";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency", currency: "IDR", minimumFractionDigits: 0,
-  }).format(amount);
-}
+import { BULAN_LABEL as bulanIndo } from "../../utils/bulan.js";
+import API from "../../utils/api.js";
 
 export default function BendaharaDashboard() {
   const navigate = useNavigate();
@@ -52,7 +47,6 @@ export default function BendaharaDashboard() {
   };
 
   const last5 = (d.chartBulanan || []).slice(-5);
-  const bulanIndo = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
   return (
     <div className="admin-dashboard">
@@ -82,7 +76,7 @@ export default function BendaharaDashboard() {
             </span>
           </div>
           <div className="stat-card__content">
-            <h3 className="stat-card__value">{formatCurrency(d.totalPemasukan)}</h3>
+            <h3 className="stat-card__value">{rupiah(d.totalPemasukan)}</h3>
             <p className="stat-card__title">Total Pemasukan</p>
           </div>
         </div>
@@ -97,7 +91,7 @@ export default function BendaharaDashboard() {
             </span>
           </div>
           <div className="stat-card__content">
-            <h3 className="stat-card__value">{formatCurrency(d.totalPengeluaran)}</h3>
+            <h3 className="stat-card__value">{rupiah(d.totalPengeluaran)}</h3>
             <p className="stat-card__title">Total Pengeluaran</p>
           </div>
         </div>
@@ -109,7 +103,7 @@ export default function BendaharaDashboard() {
             </div>
           </div>
           <div className="stat-card__content">
-            <h3 className="stat-card__value">{formatCurrency(d.saldo)}</h3>
+            <h3 className="stat-card__value">{rupiah(d.saldo)}</h3>
             <p className="stat-card__title">Saldo Bersih</p>
           </div>
         </div>
@@ -121,9 +115,9 @@ export default function BendaharaDashboard() {
             </div>
           </div>
           <div className="stat-card__content">
-            <h3 className="stat-card__value">{formatCurrency(d.pemasukanSampah)}</h3>
+            <h3 className="stat-card__value">{rupiah(d.pemasukanSampah)}</h3>
             <p className="stat-card__title">Iuran Sampah</p>
-            <p className="stat-card__subtitle">+ Qurban {formatCurrency(d.pemasukanQurban)}</p>
+            <p className="stat-card__subtitle">+ Qurban {rupiah(d.pemasukanQurban)}</p>
           </div>
         </div>
       </section>
@@ -152,12 +146,12 @@ export default function BendaharaDashboard() {
                     <div key={i} className="chart-bar-group">
                       <div className="chart-bar-group__bars">
                         <div className="chart-bar chart-bar--income" style={{ height: `${(m.pemasukan / maxVal) * 100}%` }}
-                          title={`Pemasukan: ${formatCurrency(m.pemasukan)}`}>
-                          <span className="chart-bar__tooltip">{formatCurrency(m.pemasukan)}</span>
+                          title={`Pemasukan: ${rupiah(m.pemasukan)}`}>
+                          <span className="chart-bar__tooltip">{rupiah(m.pemasukan)}</span>
                         </div>
                         <div className="chart-bar chart-bar--expense" style={{ height: `${(m.pengeluaran / maxVal) * 100}%` }}
-                          title={`Pengeluaran: ${formatCurrency(m.pengeluaran)}`}>
-                          <span className="chart-bar__tooltip">{formatCurrency(m.pengeluaran)}</span>
+                          title={`Pengeluaran: ${rupiah(m.pengeluaran)}`}>
+                          <span className="chart-bar__tooltip">{rupiah(m.pengeluaran)}</span>
                         </div>
                       </div>
                       <span className="chart-bar-group__label">{bulanIndo[m.bulan] || m.bulan}</span>

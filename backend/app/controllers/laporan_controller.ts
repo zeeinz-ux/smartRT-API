@@ -1,6 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import Laporan from '#models/laporan'
+import { storeLaporanValidator, updateLaporanValidator, tanggapiLaporanValidator } from '#validators/laporan_validator'
 
 export default class LaporanController {
   /**
@@ -71,14 +72,7 @@ export default class LaporanController {
       }
 
       const isAdmin = auth.user.role === 'admin' || auth.user.role === 'bendahara'
-      const { judul, isi, foto, user_id } = request.only(['judul', 'isi', 'foto', 'user_id'])
-
-      if (!judul || !isi) {
-        return response.status(400).json({
-          success: false,
-          message: 'Judul dan isi laporan wajib diisi',
-        })
-      }
+      const { judul, isi, foto, user_id } = await storeLaporanValidator.validate(request.only(['judul', 'isi', 'foto', 'user_id']))
 
       if (isAdmin && !user_id) {
         return response.status(400).json({
@@ -174,7 +168,7 @@ export default class LaporanController {
         })
       }
 
-      const { judul, isi, foto } = request.only(['judul', 'isi', 'foto'])
+      const { judul, isi, foto } = await updateLaporanValidator.validate(request.only(['judul', 'isi', 'foto']))
       if (judul !== undefined) laporan.judul = judul
       if (isi !== undefined) laporan.isi = isi
       if (foto !== undefined) laporan.foto = foto
@@ -203,11 +197,7 @@ export default class LaporanController {
       }
 
       const laporan = await Laporan.findOrFail(params.id)
-      const { status, tanggapan } = request.only(['status', 'tanggapan'])
-
-      if (status && !['diproses', 'selesai', 'ditolak'].includes(status)) {
-        return response.status(400).json({ success: false, message: 'Status tidak valid' })
-      }
+      const { status, tanggapan } = await tanggapiLaporanValidator.validate(request.only(['status', 'tanggapan']))
 
       if (status) laporan.status = status
       if (tanggapan !== undefined) laporan.tanggapan = tanggapan

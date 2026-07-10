@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from "react";
 import "../../assets/style/css/OnboardingForm.css";
 import { validateNIK, validateKK } from "../../utils/kependudukan.js";
+import API_BASE from "../../utils/api.js";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3333";
 
 const STEPS = [
   { id: 1, label: "Identitas", icon: "👤", desc: "Data diri & NIK" },

@@ -2,6 +2,7 @@ import { HttpContext } from '@adonisjs/core/http'
 import { v4 as uuid } from 'uuid'
 import app from '@adonisjs/core/services/app'
 import PaymentSetting from '#models/payment_setting'
+import { storePaymentSettingValidator, updatePaymentSettingValidator } from '#validators/payment_setting_validator'
 
 export default class PaymentSettingController {
   async index({ auth, response }: HttpContext) {
@@ -21,16 +22,9 @@ export default class PaymentSettingController {
       return response.status(403).json({ success: false, message: 'Akses ditolak' })
     }
 
-    const { nama_bank, nomor_rekening, nama_penerima } = request.only([
+    const { nama_bank, nomor_rekening, nama_penerima } = await storePaymentSettingValidator.validate(request.only([
       'nama_bank', 'nomor_rekening', 'nama_penerima',
-    ])
-
-    if (!nama_bank || !nomor_rekening || !nama_penerima) {
-      return response.status(400).json({
-        success: false,
-        message: 'nama_bank, nomor_rekening, dan nama_penerima wajib diisi',
-      })
-    }
+    ]))
 
     let qrisPath: string | null = null
     const qrisFile = request.file('qris', {
@@ -87,9 +81,9 @@ export default class PaymentSettingController {
     }
 
     const setting = await PaymentSetting.findOrFail(params.id)
-    const { nama_bank, nomor_rekening, nama_penerima } = request.only([
+    const { nama_bank, nomor_rekening, nama_penerima } = await updatePaymentSettingValidator.validate(request.only([
       'nama_bank', 'nomor_rekening', 'nama_penerima',
-    ])
+    ]))
 
     if (nama_bank !== undefined) setting.nama_bank = nama_bank
     if (nomor_rekening !== undefined) setting.nomor_rekening = nomor_rekening

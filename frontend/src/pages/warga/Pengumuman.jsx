@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Clock, FileText } from "lucide-react";
+import { formatDateLong } from "../../utils/formatDate.js";
 import "../../assets/style/css/WargaPengumuman.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+import API_BASE_URL from "../../utils/api.js";
 
 export default function WargaPengumuman() {
   const [data, setData] = useState([]);
@@ -66,7 +61,7 @@ export default function WargaPengumuman() {
                 onClick={() => setExpanded(expanded === item.id ? null : item.id)}>
                 <div className="wp-card__header">
                   <h3 className="wp-card__judul">{item.judul}</h3>
-                  <span className="wp-card__date"><Clock size={14} /> {formatDate(item.published_at)}</span>
+                  <span className="wp-card__date"><Clock size={14} /> {formatDateLong(item.published_at)}</span>
                 </div>
                 <div className={`wp-card__body ${expanded === item.id ? "wp-card__body--open" : ""}`}>
                   <p className="wp-card__isi">{item.isi}</p>

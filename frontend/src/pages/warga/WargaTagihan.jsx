@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CheckCircle2, Clock, AlertCircle, Wallet, X, Upload, QrCode, Banknote } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Wallet, X, Upload, QrCode, Banknote, History } from "lucide-react";
+import { rupiah } from "../../utils/rupiah.js";
+import { formatDate } from "../../utils/formatDate.js";
 import "../../assets/style/css/LaporanWarga.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function rupiah(n) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
-}
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
+import API_BASE_URL from "../../utils/api.js";
+import { BULAN_TANPA_SEMUA, BULAN_SINGKAT } from "../../utils/bulan.js";
 
 export default function WargaTagihan() {
   const [data, setData] = useState([]);
@@ -20,8 +13,13 @@ export default function WargaTagihan() {
   const [statusFilter, setStatusFilter] = useState("");
   const [showDetail, setShowDetail] = useState(null);
   const [showBayar, setShowBayar] = useState(null);
+  const [showCicil, setShowCicil] = useState(null);
+  const [showRiwayat, setShowRiwayat] = useState(null);
+  const [riwayatData, setRiwayatData] = useState(null);
+  const [isRiwayatLoading, setIsRiwayatLoading] = useState(false);
   const [metodePembayaran, setMetodePembayaran] = useState("");
   const [buktiFile, setBuktiFile] = useState(null);
+  const [jumlahCicil, setJumlahCicil] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentSetting, setPaymentSetting] = useState(null);
   const fileInputRef = useRef(null);
@@ -90,6 +88,64 @@ export default function WargaTagihan() {
     }
   };
 
+  const handleCicil = async () => {
+    if (!showCicil || !metodePembayaran || !jumlahCicil) return;
+    const jumlahNum = parseInt(jumlahCicil.replace(/\D/g, ""), 10);
+    if (!jumlahNum || jumlahNum <= 0) {
+      alert("Jumlah pembayaran harus lebih dari 0");
+      return;
+    }
+    if (jumlahNum > showCicil.sisa) {
+      alert(`Jumlah pembayaran (Rp ${jumlahNum.toLocaleString("id-ID")}) melebihi sisa tagihan (Rp ${showCicil.sisa.toLocaleString("id-ID")})`);
+      return;
+    }
+    if (metodePembayaran !== "tunai" && !buktiFile) {
+      alert("Bukti pembayaran wajib diupload untuk metode transfer/QRIS");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("jumlah", String(jumlahNum));
+      formData.append("metode_pembayaran", metodePembayaran);
+      if (buktiFile) formData.append("bukti_pembayaran", buktiFile);
+
+      const res = await fetch(`${API_BASE_URL}/api/warga/tagihan/${showCicil.id}/bayar-cicilan`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const json = await res.json();
+      if (json.success) {
+        setShowCicil(null);
+        setMetodePembayaran("");
+        setBuktiFile(null);
+        setJumlahCicil("");
+        fetchData();
+      } else {
+        alert(json.message || "Gagal mengajukan cicilan");
+      }
+    } catch {
+      alert("Terjadi kesalahan. Silakan coba lagi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openRiwayat = async (item) => {
+    setShowRiwayat(item);
+    setIsRiwayatLoading(true);
+    setRiwayatData(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/warga/tagihan/${item.id}/payments`, { credentials: "include" });
+      const json = await res.json();
+      if (json.success) setRiwayatData(json.data);
+    } catch {
+    } finally {
+      setIsRiwayatLoading(false);
+    }
+  };
+
   const METODE_OPTIONS = [
     { value: "tunai", label: "Tunai", desc: "Bayar langsung ke bendahara" },
     { value: "transfer", label: "Transfer", desc: "Transfer ke nomor rekening yang ditentukan" },
@@ -114,17 +170,13 @@ export default function WargaTagihan() {
     return "Belum Lunas";
   };
 
-  const BULANS = [
-    { v: 1, l: "Jan" }, { v: 2, l: "Feb" }, { v: 3, l: "Mar" }, { v: 4, l: "Apr" },
-    { v: 5, l: "Mei" }, { v: 6, l: "Jun" }, { v: 7, l: "Jul" }, { v: 8, l: "Agu" },
-    { v: 9, l: "Sep" }, { v: 10, l: "Okt" }, { v: 11, l: "Nov" }, { v: 12, l: "Des" },
-  ];
+  const BULANS = BULAN_SINGKAT.map(b => ({ v: b.value, l: b.label }));
 
   const [tahunGrid, setTahunGrid] = useState(new Date().getFullYear());
 
   // Build 12-month grid status from data
   const gridStatus = {};
-  const monthNames = ["","Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const monthNames = ["", ...BULAN_TANPA_SEMUA.map(b => b.label)];
   for (let m = 1; m <= 12; m++) {
     const found = data.find((d) => d.tahun === tahunGrid && d.bulan === m);
     gridStatus[m] = found ? found.status : null;
@@ -136,6 +188,20 @@ export default function WargaTagihan() {
     { value: "pending", label: "Pending" },
     { value: "lunas", label: "Lunas" },
   ];
+
+  const paymentStatusLabel = (s) => {
+    if (s === "confirmed") return "Diverifikasi";
+    if (s === "pending") return "Pending";
+    if (s === "rejected") return "Ditolak";
+    return s;
+  };
+
+  const paymentStatusClass = (s) => {
+    if (s === "confirmed") return "badge badge--selesai";
+    if (s === "pending") return "badge badge--pending";
+    if (s === "rejected") return "badge badge--ditolak";
+    return "badge";
+  };
 
   return (
     <div>
@@ -234,6 +300,7 @@ export default function WargaTagihan() {
                 <th style={{ padding: "10px 12px", fontWeight: 600 }}>Kategori</th>
                 <th style={{ padding: "10px 12px", fontWeight: 600 }}>Periode</th>
                 <th style={{ padding: "10px 12px", fontWeight: 600 }}>Jumlah</th>
+                <th style={{ padding: "10px 12px", fontWeight: 600 }}>Sisa</th>
                 <th style={{ padding: "10px 12px", fontWeight: 600 }}>Status</th>
                 <th style={{ padding: "10px 12px", fontWeight: 600 }}>Tanggal Bayar</th>
                 <th style={{ padding: "10px 12px", fontWeight: 600 }}></th>
@@ -251,6 +318,9 @@ export default function WargaTagihan() {
                   <td style={{ padding: "10px 12px", fontWeight: 600 }}>
                     {rupiah(item.jumlah)}
                   </td>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: item.sisa > 0 ? "#dc2626" : "#16a34a" }}>
+                    {item.sisa > 0 ? rupiah(item.sisa) : "Lunas"}
+                  </td>
                   <td style={{ padding: "10px 12px" }}>
                     <span className={statusClass(item.status)} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                       {statusIcon(item.status)} {statusLabel(item.status)}
@@ -259,28 +329,47 @@ export default function WargaTagihan() {
                   <td style={{ padding: "10px 12px", color: "var(--clr-subtitle)" }}>
                     {item.paid_at ? formatDate(item.paid_at) : "-"}
                   </td>
-                  <td style={{ padding: "10px 12px", display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => setShowDetail(showDetail?.id === item.id ? null : item)}
-                      style={{
-                        background: "none", border: "none", cursor: "pointer",
-                        color: "var(--clr-primary)", fontSize: "0.8rem", textDecoration: "underline",
-                      }}
-                    >
-                      Detail
-                    </button>
-                    {item.status === "belum_lunas" && (
+                  <td style={{ padding: "10px 12px" }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <button
-                        onClick={() => { setShowBayar(item); setMetodePembayaran(""); setBuktiFile(null); }}
+                        onClick={() => setShowDetail(showDetail?.id === item.id ? null : item)}
                         style={{
-                          background: "#166534", color: "#fff", border: "none",
-                          borderRadius: 6, padding: "2px 12px", cursor: "pointer",
-                          fontSize: "0.78rem", fontWeight: 600,
+                          background: "none", border: "none", cursor: "pointer",
+                          color: "var(--clr-primary)", fontSize: "0.78rem", textDecoration: "underline",
                         }}
                       >
-                        Bayar
+                        Detail
                       </button>
-                    )}
+                      {item.status === "belum_lunas" && item.sisa > 0 && (
+                        <button
+                          onClick={() => {
+                            setShowCicil(item);
+                            setJumlahCicil(String(item.sisa));
+                            setMetodePembayaran("");
+                            setBuktiFile(null);
+                          }}
+                          title="Bayar cicilan"
+                          style={{
+                            background: "#166534", color: "#fff", border: "none",
+                            borderRadius: 6, padding: "2px 10px", cursor: "pointer",
+                            fontSize: "0.78rem", fontWeight: 600, whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.sisa < item.jumlah ? "Cicil" : "Bayar"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => openRiwayat(item)}
+                        title="Riwayat pembayaran"
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          color: "var(--clr-subtitle)", display: "inline-flex", alignItems: "center",
+                          padding: "4px", borderRadius: 4,
+                        }}
+                      >
+                        <History size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -289,7 +378,7 @@ export default function WargaTagihan() {
         </div>
       )}
 
-      {/* Bayar Modal */}
+      {/* Bayar Modal (full payment - existing flow) */}
       {showBayar && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 1000,
@@ -410,6 +499,245 @@ export default function WargaTagihan() {
         </div>
       )}
 
+      {/* Cicil Modal */}
+      {showCicil && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.4)",
+        }} onClick={() => { if (!isSubmitting) { setShowCicil(null); setMetodePembayaran(""); setBuktiFile(null); setJumlahCicil(""); } }}>
+          <div style={{
+            background: "#fff", borderRadius: 12, padding: 24, width: "90%", maxWidth: 420,
+            position: "relative",
+          }} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => { setShowCicil(null); setMetodePembayaran(""); setBuktiFile(null); setJumlahCicil(""); }} disabled={isSubmitting} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }}>
+              <X size={20} />
+            </button>
+            <h3 style={{ margin: "0 0 4px", fontSize: "1rem" }}>Bayar Cicilan</h3>
+            <p style={{ margin: "0 0 16px", fontSize: "0.82rem", color: "var(--clr-subtitle)" }}>
+              {showCicil.kategori?.nama} — Sisa: {rupiah(showCicil.sisa)}
+            </p>
+
+            {/* Jumlah Input */}
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ margin: "0 0 6px", fontSize: "0.82rem", fontWeight: 600 }}>Jumlah Pembayaran</p>
+              <div style={{ display: "flex", alignItems: "center", border: "2px solid #d1d5db", borderRadius: 8, overflow: "hidden" }}>
+                <span style={{ padding: "10px 12px", background: "#f3f4f6", fontWeight: 600, fontSize: "0.9rem", borderRight: "1px solid #d1d5db" }}>Rp</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={jumlahCicil}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, "");
+                    if (raw === "") { setJumlahCicil(""); return; }
+                    const num = parseInt(raw, 10);
+                    if (num > showCicil.sisa) {
+                      setJumlahCicil(String(showCicil.sisa));
+                    } else {
+                      setJumlahCicil(raw);
+                    }
+                  }}
+                  style={{ flex: 1, padding: "10px 12px", border: "none", outline: "none", fontSize: "0.9rem", fontWeight: 600 }}
+                  placeholder="0"
+                />
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "var(--clr-subtitle)" }}>
+                Sisa tagihan: {rupiah(showCicil.sisa)}
+                {jumlahCicil && parseInt(jumlahCicil.replace(/\D/g, ""), 10) > 0 && (
+                  <span style={{ marginLeft: 8, color: "#16a34a", fontWeight: 600 }}>
+                    → Sisa setelah bayar: {rupiah(showCicil.sisa - parseInt(jumlahCicil.replace(/\D/g, ""), 10))}
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {paymentSetting && (
+              <div style={{ background: "#1e293b", color: "#fff", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <Banknote size={16} />
+                  <span style={{ fontWeight: 700, fontSize: "0.85rem", letterSpacing: 0.5 }}>{paymentSetting.nama_bank}</span>
+                </div>
+                <p style={{ margin: "2px 0", fontSize: "0.95rem", fontWeight: 700, letterSpacing: 1 }}>{paymentSetting.nomor_rekening}</p>
+                <p style={{ margin: 0, fontSize: "0.75rem", opacity: 0.7 }}>A/N {paymentSetting.nama_penerima}</p>
+                {paymentSetting.qris_path && (
+                  <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, color: "#22c55e", fontSize: "0.82rem", fontWeight: 600 }}>
+                    <QrCode size={16} /> QRIS tersedia — pilih metode QRIS
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {METODE_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "12px 16px", borderRadius: 8, cursor: "pointer",
+                    border: `2px solid ${metodePembayaran === opt.value ? "#166534" : "#e5e7eb"}`,
+                    background: metodePembayaran === opt.value ? "#f0fdf4" : "#fff",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="metodeCicil"
+                    value={opt.value}
+                    checked={metodePembayaran === opt.value}
+                    onChange={() => setMetodePembayaran(opt.value)}
+                    style={{ accentColor: "#166534" }}
+                  />
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: "0.85rem" }}>{opt.label}</p>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--clr-subtitle)" }}>{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {metodePembayaran && metodePembayaran !== "tunai" && (
+              <div style={{ marginTop: 16 }}>
+                <p style={{ margin: "0 0 8px", fontSize: "0.82rem", fontWeight: 600 }}>
+                  Upload Bukti Pembayaran
+                </p>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    border: "2px dashed #d1d5db", borderRadius: 8, padding: 20,
+                    textAlign: "center", cursor: "pointer",
+                    background: buktiFile ? "#f0fdf4" : "#f9fafb",
+                    borderColor: buktiFile ? "#16a34a" : "#d1d5db",
+                  }}
+                >
+                  {buktiFile ? (
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.82rem", color: "#16a34a", fontWeight: 600 }}>
+                        ✓ {buktiFile.name}
+                      </p>
+                      <p style={{ margin: "4px 0 0", fontSize: "0.72rem", color: "var(--clr-subtitle)" }}>
+                        {(buktiFile.size / 1024 / 1024).toFixed(1)} MB
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload size={24} style={{ opacity: 0.3, marginBottom: 4 }} />
+                      <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--clr-subtitle)" }}>
+                        Klik untuk upload (JPG/PNG/PDF, max 5MB)
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  style={{ display: "none" }}
+                  onChange={(e) => setBuktiFile(e.target.files[0] || null)}
+                />
+              </div>
+            )}
+
+            <button
+              onClick={handleCicil}
+              disabled={!metodePembayaran || !jumlahCicil || isSubmitting || (metodePembayaran !== "tunai" && !buktiFile)}
+              style={{
+                width: "100%", marginTop: 20, padding: "10px 0",
+                background: !metodePembayaran || !jumlahCicil || isSubmitting || (metodePembayaran !== "tunai" && !buktiFile) ? "#9ca3af" : "#166534",
+                color: "#fff", border: "none", borderRadius: 8,
+                fontSize: "0.9rem", fontWeight: 600, cursor: !metodePembayaran || !jumlahCicil || isSubmitting || (metodePembayaran !== "tunai" && !buktiFile) ? "not-allowed" : "pointer",
+              }}
+            >
+              {isSubmitting ? "Mengirim..." : "Ajukan Cicilan"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Riwayat Pembayaran Modal */}
+      {showRiwayat && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.4)",
+        }} onClick={() => { setShowRiwayat(null); setRiwayatData(null); }}>
+          <div style={{
+            background: "#fff", borderRadius: 12, padding: 24, width: "90%", maxWidth: 600,
+            position: "relative", maxHeight: "80vh", display: "flex", flexDirection: "column",
+          }} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => { setShowRiwayat(null); setRiwayatData(null); }} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }}>
+              <X size={20} />
+            </button>
+            <h3 style={{ margin: "0 0 4px", fontSize: "1rem" }}>Riwayat Pembayaran</h3>
+            <p style={{ margin: "0 0 16px", fontSize: "0.82rem", color: "var(--clr-subtitle)" }}>
+              {showRiwayat.kategori?.nama} — {showRiwayat.bulan ? `${showRiwayat.bulan}/${showRiwayat.tahun}` : showRiwayat.tahun}
+            </p>
+
+            {/* Summary */}
+            {riwayatData && (
+              <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
+                <div style={{ background: "#f3f4f6", borderRadius: 8, padding: "8px 14px", fontSize: "0.82rem" }}>
+                  <span style={{ color: "var(--clr-subtitle)" }}>Tagihan: </span>
+                  <strong>{rupiah(riwayatData.iuran.jumlah)}</strong>
+                </div>
+                <div style={{ background: "#f3f4f6", borderRadius: 8, padding: "8px 14px", fontSize: "0.82rem" }}>
+                  <span style={{ color: "var(--clr-subtitle)" }}>Sisa: </span>
+                  <strong style={{ color: riwayatData.iuran.sisa > 0 ? "#dc2626" : "#16a34a" }}>{riwayatData.iuran.sisa > 0 ? rupiah(riwayatData.iuran.sisa) : "Lunas"}</strong>
+                </div>
+                <div style={{ background: "#f3f4f6", borderRadius: 8, padding: "8px 14px", fontSize: "0.82rem" }}>
+                  <span style={{ color: "var(--clr-subtitle)" }}>Status: </span>
+                  <span className={statusClass(riwayatData.iuran.status)} style={{ fontSize: "0.78rem" }}>{statusLabel(riwayatData.iuran.status)}</span>
+                </div>
+              </div>
+            )}
+
+            {isRiwayatLoading ? (
+              <div style={{ textAlign: "center", padding: 30, color: "var(--clr-subtitle)" }}>Memuat...</div>
+            ) : riwayatData && riwayatData.payments.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 30 }}>
+                <p style={{ color: "var(--clr-subtitle)" }}>Belum ada riwayat pembayaran</p>
+              </div>
+            ) : riwayatData ? (
+              <div style={{ overflowY: "auto", flex: 1 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #e5e7eb", textAlign: "left" }}>
+                      <th style={{ padding: "8px 10px", fontWeight: 600 }}>Tanggal</th>
+                      <th style={{ padding: "8px 10px", fontWeight: 600 }}>Jumlah</th>
+                      <th style={{ padding: "8px 10px", fontWeight: 600 }}>Metode</th>
+                      <th style={{ padding: "8px 10px", fontWeight: 600 }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {riwayatData.payments.map((p) => (
+                      <tr key={p.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                        <td style={{ padding: "8px 10px", color: "var(--clr-subtitle)" }}>
+                          {formatDate(p.paid_at)}
+                        </td>
+                        <td style={{ padding: "8px 10px", fontWeight: 600 }}>
+                          {rupiah(p.jumlah)}
+                        </td>
+                        <td style={{ padding: "8px 10px" }}>
+                          {p.metode_pembayaran ? p.metode_pembayaran.charAt(0).toUpperCase() + p.metode_pembayaran.slice(1) : "-"}
+                        </td>
+                        <td style={{ padding: "8px 10px" }}>
+                          <span className={paymentStatusClass(p.status)} style={{ fontSize: "0.78rem" }}>
+                            {paymentStatusLabel(p.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: 30 }}>
+                <p style={{ color: "var(--clr-subtitle)" }}>Gagal memuat riwayat</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Detail Modal */}
       {showDetail && (
         <div style={{
@@ -430,6 +758,7 @@ export default function WargaTagihan() {
                 <tr><td style={{ padding: "6px 8px", color: "var(--clr-subtitle)", width: 120 }}>Kategori</td><td style={{ padding: "6px 8px" }}>{showDetail.kategori?.nama || "Iuran"}</td></tr>
                 <tr><td style={{ padding: "6px 8px", color: "var(--clr-subtitle)" }}>Periode</td><td style={{ padding: "6px 8px" }}>{showDetail.bulan ? `${showDetail.bulan}/${showDetail.tahun}` : showDetail.tahun}</td></tr>
                 <tr><td style={{ padding: "6px 8px", color: "var(--clr-subtitle)" }}>Jumlah</td><td style={{ padding: "6px 8px", fontWeight: 600 }}>{rupiah(showDetail.jumlah)}</td></tr>
+                <tr><td style={{ padding: "6px 8px", color: "var(--clr-subtitle)" }}>Sisa</td><td style={{ padding: "6px 8px", fontWeight: 600, color: showDetail.sisa > 0 ? "#dc2626" : "#16a34a" }}>{showDetail.sisa > 0 ? rupiah(showDetail.sisa) : "Lunas"}</td></tr>
                 <tr><td style={{ padding: "6px 8px", color: "var(--clr-subtitle)" }}>Status</td><td style={{ padding: "6px 8px" }}><span className={statusClass(showDetail.status)}>{statusLabel(showDetail.status)}</span></td></tr>
                 <tr><td style={{ padding: "6px 8px", color: "var(--clr-subtitle)" }}>Pembayaran</td><td style={{ padding: "6px 8px" }}>{showDetail.metode_pembayaran ? showDetail.metode_pembayaran.charAt(0).toUpperCase() + showDetail.metode_pembayaran.slice(1) : "-"}</td></tr>
                 <tr><td style={{ padding: "6px 8px", color: "var(--clr-subtitle)" }}>Tanggal Bayar</td><td style={{ padding: "6px 8px" }}>{showDetail.paid_at ? formatDate(showDetail.paid_at) : "-"}</td></tr>

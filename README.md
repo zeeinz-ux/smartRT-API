@@ -17,10 +17,11 @@ Sistem manajemen RT/RW berbasis web untuk RT 003 — mencakup manajemen warga, i
 ### Frontend
 - **React 19** — UI Library
 - **Vite** — Build tool
-- **TailwindCSS 4** — Utility-first CSS
+- **TailwindCSS 4** — Tapi sebagian besar styling pakai standalone CSS files (custom design tokens via CSS variables)
 - **React Router DOM** — Client-side routing
-- **Heroicons** + **React Icons** — Ikon
-- **Axios** — HTTP client
+- **Lucide React** — Ikon utama
+- **React Icons** — Hanya di halaman Login
+- **Native `fetch()`** — Semua request API (tidak pakai Axios)
 
 ---
 
@@ -34,8 +35,7 @@ smartRT-API
 │   │   ├── controllers/    # API controllers
 │   │   ├── models/         # Lucid models (ORM)
 │   │   ├── services/       # Business logic (Google Sheets, dll)
-│   │   ├── middleware/     # Auth & role middleware
-│   │   └── validators/     # Request validation
+│   │   └── middleware/     # Auth & role middleware
 │   ├── config/             # Konfigurasi aplikasi
 │   ├── database/
 │   │   ├── migrations/     # Database migrations
@@ -46,15 +46,16 @@ smartRT-API
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── api/            # Axios instance & interceptors
-│   │   ├── assets/         # CSS styles
+│   │   ├── assets/         # CSS styles (standalone, per halaman)
 │   │   ├── components/     # Shared components (Layout, FAB, dll)
 │   │   ├── pages/          # Halaman per role (admin, bendahara, warga, auth)
-│   │   └── utils/          # Utility functions
-│   └── public/             # Static assets
+│   │   └── utils/          # Utility functions (rupiah, formatDate, dll)
+│   ├── RESPONSIVE.md       # Catatan responsive CSS issues
+│   └── public/
 │
 ├── PRD.md                  # Product Requirements Document
-├── AGENTS.md               # Development instructions
+├── AGENTS.md               # Development instructions & conventions
+├── ROADMAP.md              # Roadmap perbaikan & pengembangan
 └── README.md
 ```
 
@@ -64,9 +65,9 @@ smartRT-API
 
 ### 1. Autentikasi & Role-Based Access
 - Login dengan **email + password + pilih role**
-- Session-based authentication
+- Session-based authentication (no JWT, no remember-me)
 - Tiga role: `admin`, `bendahara`, `warga`
-- Onboarding flow untuk warga baru
+- Onboarding flow untuk warga baru (admin buat akun → warga login → isi profil → admin verifikasi)
 
 ### 2. Manajemen Warga (Admin)
 - CRUD akun warga
@@ -78,12 +79,14 @@ smartRT-API
 - Pencatatan pembayaran iuran kebersihan per warga per bulan
 - Filter bulan & tahun
 - Stat cards: Total, Lunas, Belum Lunas, Terkumpul
+- Cicilan (installment) — bayar sebagian, riwayat pembayaran
 - Modal pembayaran QRIS
 
 ### 4. Iuran Qurban (Tahunan)
 - Pencatatan pembayaran iuran qurban per warga
 - Sub-filter bulan dalam tahun berjalan
 - Stat cards + QRIS payment modal
+- Cicilan (installment) — bayar sebagian, riwayat pembayaran
 
 ### 5. Keuangan
 - Rekap pemasukan (dari Sampah + Qurban) & pengeluaran
@@ -129,8 +132,7 @@ smartRT-API
 | `/onboarding` | Form onboarding warga | Warga (pending) |
 | `/admin/dashboard` | Dashboard admin | Admin |
 | `/admin/warga` | Manajemen warga | Admin |
-| `/admin/sampah` | Iuran sampah | Admin, Bendahara |
-| `/admin/kurban` | Iuran qurban | Admin, Bendahara |
+| `/admin/iuran` | Iuran (Sampah & Qurban) | Admin, Bendahara |
 | `/admin/keuangan` | Keuangan | Admin, Bendahara |
 | `/admin/laporan` | Laporan warga | Admin |
 | `/admin/pengumuman` | Pengumuman | Admin, Bendahara |
@@ -138,6 +140,7 @@ smartRT-API
 | `/admin/darurat` | Monitoring darurat | Admin, Bendahara |
 | `/bendahara/dashboard` | Dashboard bendahara | Bendahara |
 | `/warga/dashboard` | Dashboard warga | Warga |
+| `/warga/iuran` | Iuran saya | Warga |
 | `/warga/laporan` | Laporan saya | Warga |
 | `/warga/pengumuman` | Pengumuman | Warga |
 | `/warga/surat` | Surat pengantar | Warga |
@@ -213,20 +216,21 @@ VITE_API_URL=http://localhost:3333
 ### Backend (`backend/`)
 | Script | Fungsi |
 |--------|--------|
-| `npm run dev` | Dev server (HMR) |
-| `npm run build` | Production build |
-| `npm run test` | Jalankan test (Japa) |
+| `npm run dev` | Dev server (HMR via hot-hook) |
+| `npm run build` | Production build (`node ace build`) |
+| `npm run test` / `node ace test` | Jalankan semua test suites (Japa) |
+| `node ace test --files tests/functional/auth.spec.ts` | Jalankan file test tertentu |
 | `npm run lint` | ESLint |
 | `npm run format` | Prettier --write |
-| `npm run typecheck` | TypeScript type check |
+| `npm run typecheck` | TypeScript type check (2 proyek: root + inertia) |
 | `node ace migration:run` | Run migrations |
 | `node ace migration:rollback` | Rollback migrations |
 
 ### Frontend (`frontend/`)
 | Script | Fungsi |
 |--------|--------|
-| `npm run dev` | Vite dev server |
-| `npm run build` | Production build |
+| `npm run dev` | Vite dev server (`:5173`) |
+| `npm run build` | Production build (output ke `../public/assets/`) |
 | `npm run preview` | Preview production build |
 
 ---
@@ -234,11 +238,28 @@ VITE_API_URL=http://localhost:3333
 ## Catatan Penting
 
 - **Session-based auth** (bukan JWT) — `JWT_SECRET` di `.env` tidak dipakai
-- **Password hashing** otomatis via `@beforeSave()` hook — jangan hash manual
+- **No remember-me** — `useRememberMeTokens: false`, user harus login ulang setelah session expired (2 jam)
+- **Password hashing** otomatis via `@beforeSave()` hook pada User model — jangan hash atau compare manual
+- **Kolom password adalah `password_hash`** (bukan `password`), dengan `serializeAs: null`
 - **NIK/KK** validasi 16 digit angka, selalu `.toString().trim()` sebelum digunakan
-- **Google Sheets sync** non-critical — error dicatch silent
-- Semua path file backend relatif ke direktori `backend/`
-- Dua tsconfig: `tsconfig.json` (root) + `tsconfig.inertia.json` (Inertia page types)
+- **Google Sheets sync** non-critical — error dicatch silent, request tetap jalan
+- **Role enum**: `admin | bendahara | warga` (column `users.role`)
+- **User status**: `active | pending | suspended`
+- **Verification status**: `pending | verified | rejected` (pada `warga_profiles`)
+- **Status huni**: `pemilik | penyewa` (pada `warga_profiles`)
+- **Onboarding flow**: Admin buat akun → `requiresOnboarding: true` → warga login → POST `/api/warga/onboarding` → admin verifikasi
+- **Backend HMR**: `hotHook.boundaries` = `app/controllers/**` + `app/middleware/*`
+- **Dua tsconfig**: `tsconfig.json` (root) + `inertia/tsconfig.json`
+- **Frontend build** output ke `backend/public/assets/` (via `@adonisjs/vite/client`)
+- **Dev mode**: Dua server (frontend `:5173`, backend `:3333`), backend proxy ke Vite dev server
+
+---
+
+## Status Pengembangan
+
+Lihat [ROADMAP.md](./ROADMAP.md) untuk rencana perbaikan & pengembangan per phase.
+
+Catatan responsive CSS tersedia di [frontend/RESPONSIVE.md](./frontend/RESPONSIVE.md).
 
 ---
 

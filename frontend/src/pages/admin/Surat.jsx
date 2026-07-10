@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Download, Trash2, Plus, Upload, FileText } from "lucide-react";
+import { formatDateTime } from "../../utils/formatDate.js";
 import "../../assets/style/css/AdminSurat.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+import API_BASE_URL from "../../utils/api.js";
 
 const JENIS_OPTIONS = [
   { value: "domisili", label: "Surat Keterangan Domisili" },
@@ -267,7 +262,7 @@ export default function AdminSurat() {
                         const sb = statusBadge(item.status);
                         return (
                           <tr key={item.id} className={`as-row--${item.status}`}>
-                            <td className="as-cell-date">{formatDate(item.created_at)}</td>
+                            <td className="as-cell-date">{formatDateTime(item.created_at)}</td>
                             <td><strong>{item.user?.nama || "-"}</strong></td>
                             <td>{item.jenis_label}</td>
                             <td className="as-cell-keperluan">{item.keperluan}</td>
@@ -438,7 +433,7 @@ export default function AdminSurat() {
                   <span><strong>Dibuat oleh:</strong> {selected.creator?.nama || "Warga sendiri"}</span>
                   <span><strong>Jenis:</strong> {selected.jenis_label}</span>
                   <span><strong>Keperluan:</strong> {selected.keperluan}</span>
-                  <span><strong>Tanggal:</strong> {formatDate(selected.created_at)}</span>
+                  <span><strong>Tanggal:</strong> {formatDateTime(selected.created_at)}</span>
                   <span><strong>Status:</strong> <span className={`as-badge ${statusBadge(selected.status).cls}`}>{statusBadge(selected.status).label}</span></span>
                 </div>
                 {selected.keterangan && (

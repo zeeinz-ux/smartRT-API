@@ -1,17 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { CheckCircle2, XCircle, Clock, Search, X, Eye } from "lucide-react";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-const BULAN = [
-  { value: 0, label: "Semua Bulan" },
-  ...[1,2,3,4,5,6,7,8,9,10,11,12].map((b) => ({
-    value: b,
-    label: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"][b-1],
-  })),
-];
-
-function rupiah(n) { return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n); }
+import { rupiah } from "../../utils/rupiah.js";
+import API from "../../utils/api.js";
+import { BULAN } from "../../utils/bulan.js";
 
 export default function VerifikasiIuran() {
   const now = new Date();

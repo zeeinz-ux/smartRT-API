@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X, ChevronLeft, ChevronRight, Send, Clock, CheckCircle2, AlertCircle, Trash2, MessageSquare, Plus, Upload, Camera, Trash } from "lucide-react";
 import CameraCapture from "../../components/CameraCapture";
+import { formatDateTime } from "../../utils/formatDate.js";
 import "../../assets/style/css/ManajemenLaporan.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+import API_BASE_URL from "../../utils/api.js";
 
 export default function ManajemenLaporan() {
   const [data, setData] = useState([]);
@@ -251,7 +246,7 @@ export default function ManajemenLaporan() {
                 ) : (
                   data.map((item) => (
                     <tr key={item.id} className={`ml-table__row--${item.status}`}>
-                      <td className="ml-table__date">{formatDate(item.created_at)}</td>
+                      <td className="ml-table__date">{formatDateTime(item.created_at)}</td>
                       <td><strong>{item.user?.nama || "-"}</strong></td>
                       <td>{item.judul}</td>
                       <td>
@@ -364,7 +359,7 @@ export default function ManajemenLaporan() {
               <div className="ml-detail">
                 <div className="ml-detail__meta">
                   <span><strong>Dari:</strong> {selected.user?.nama} ({selected.user?.email})</span>
-                  <span><strong>Tanggal:</strong> {formatDate(selected.created_at)}</span>
+                  <span><strong>Tanggal:</strong> {formatDateTime(selected.created_at)}</span>
                   <span>
                     <strong>Status:</strong>{" "}
                     <span className={`ml-status-badge ml-status-badge--${selected.status}`}>

@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { Eye, EyeOff, Key, Save, Loader, Check, X } from "lucide-react";
 import "../assets/style/css/Settings.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
+import API_BASE_URL from "../utils/api.js";
 
 const RULES = [
   { key: "min", label: "Minimal 6 karakter", test: (v) => v.length >= 6 },

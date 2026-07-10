@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
-import type { BelongsTo } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
+import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import KategoriIuran from './kategori_iuran.js'
+import IuranPayment from './iuran_payment.js'
 
 export default class Iuran extends BaseModel {
   static table = 'iurans'
@@ -18,6 +19,9 @@ export default class Iuran extends BaseModel {
 
   @column()
   declare jumlah: number
+
+  @column()
+  declare sisa: number
 
   @column()
   declare bulan: number | null
@@ -63,4 +67,7 @@ export default class Iuran extends BaseModel {
 
   @belongsTo(() => User, { foreignKey: 'verified_by' })
   declare verifier: BelongsTo<typeof User>
+
+  @hasMany(() => IuranPayment, { foreignKey: 'iuran_id' })
+  declare payments: HasMany<typeof IuranPayment>
 }

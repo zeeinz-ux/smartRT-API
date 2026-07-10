@@ -4,8 +4,7 @@ import {
   User, FileText, AlertTriangle, CheckCircle2,
   Clock, Loader, Mail, Home,
 } from "lucide-react";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3333";
+import API from "../../utils/api.js";
 
 export default function WargaDashboard() {
   const navigate = useNavigate();

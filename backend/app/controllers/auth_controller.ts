@@ -2,6 +2,16 @@ import { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import WargaProfile from '#models/warga_profile'
 import env from '#start/env'
+import { loginValidator, changePasswordValidator, checkRoleValidator } from '#validators/auth_validator'
+
+interface GoogleDriver {
+  redirect(): Promise<void>
+  accessDenied(): boolean
+  stateMisMatch(): boolean
+  hasError(): boolean
+  getError(): string
+  user(): Promise<{ id: string; email: string; name: string; avatarUrl: string | null }>
+}
 
 export default class AuthController {
   /**
@@ -10,30 +20,7 @@ export default class AuthController {
    */
   async login({ request, response, auth }: HttpContext) {
     try {
-      const { email, password, role } = request.only(['email', 'password', 'role'])
-
-      // Validasi input
-      if (!email || !password) {
-        return response.status(400).json({
-          success: false,
-          message: 'Email dan password harus diisi',
-        })
-      }
-
-      if (!role) {
-        return response.status(400).json({
-          success: false,
-          message: 'Role harus dipilih',
-        })
-      }
-
-      const validRoles = ['admin', 'bendahara', 'warga']
-      if (!validRoles.includes(role)) {
-        return response.status(400).json({
-          success: false,
-          message: 'Role tidak valid',
-        })
-      }
+      const { email, password, role } = await loginValidator.validate(request.only(['email', 'password', 'role']))
 
       // Cari user berdasarkan email
       const user = await User.findBy('email', email.toLowerCase())
@@ -79,7 +66,7 @@ export default class AuthController {
 
       // Untuk warga yang pending verification, cegah login
       // Kecuali mereka belum punya profil (belum onboarding)
-      let profile: any = null
+      let profile: WargaProfile | null = null
       if (user.role === 'warga') {
         profile = await WargaProfile.findBy('user_id', user.id)
       }
@@ -127,14 +114,7 @@ export default class AuthController {
    */
   async checkRole({ request, response }: HttpContext) {
     try {
-      const email = request.input('email')
-
-      if (!email) {
-        return response.status(400).json({
-          success: false,
-          message: 'Email harus diisi',
-        })
-      }
+      const { email } = await checkRoleValidator.validate(request.qs())
 
       const user = await User.findBy('email', email.toLowerCase())
 
@@ -227,25 +207,11 @@ export default class AuthController {
         return response.status(401).json({ success: false, message: 'Belum login' })
       }
 
-      const { current_password, new_password, confirm_password } = request.only([
+      const { current_password, new_password, confirm_password } = await changePasswordValidator.validate(request.only([
         'current_password',
         'new_password',
         'confirm_password',
-      ])
-
-      if (!current_password || !new_password || !confirm_password) {
-        return response.status(400).json({
-          success: false,
-          message: 'Semua field harus diisi',
-        })
-      }
-
-      if (new_password.length < 6) {
-        return response.status(400).json({
-          success: false,
-          message: 'Password baru minimal 6 karakter',
-        })
-      }
+      ]))
 
       if (new_password !== confirm_password) {
         return response.status(400).json({
@@ -304,7 +270,7 @@ export default class AuthController {
    */
   async googleRedirect({ ally, response }: HttpContext) {
     try {
-      const google = ally.use('google') as any
+      const google = ally.use('google') as unknown as GoogleDriver
       await google.redirect()
     } catch (error) {
       console.error('Google redirect error:', error)
@@ -318,7 +284,7 @@ export default class AuthController {
    */
   async googleCallback({ ally, auth, response }: HttpContext) {
     try {
-      const google = ally.use('google') as any
+      const google = ally.use('google') as unknown as GoogleDriver
 
       if (google.accessDenied()) {
         return response.redirect(`${env.get('FRONTEND_URL')}/login?error=access_denied`, false)
@@ -330,7 +296,13 @@ export default class AuthController {
         return response.redirect(`${env.get('FRONTEND_URL')}/login?error=${google.getError()}`, false)
       }
 
-      const googleUser: any = await google.user()
+      interface GoogleUser {
+        id: string
+        email: string
+        name: string
+        avatarUrl: string | null
+      }
+      const googleUser = await google.user() as GoogleUser
 
       if (!googleUser.email) {
         return response.redirect(`${env.get('FRONTEND_URL')}/login?error=no_email`, false)

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
-
-const API_BASE_URL = import.meta.env.DEV ? "http://localhost:3333" : "";
+import API_BASE_URL from "../utils/api.js";
 
 export default function NotificationDropdown({ onClose }) {
   const [notifs, setNotifs] = useState([]);

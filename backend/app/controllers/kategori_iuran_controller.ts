@@ -1,5 +1,6 @@
 import { HttpContext } from '@adonisjs/core/http'
 import KategoriIuran from '#models/kategori_iuran'
+import { storeKategoriIuranValidator, updateKategoriIuranValidator } from '#validators/kategori_iuran_validator'
 
 export default class KategoriIuranController {
   async index({ auth, response }: HttpContext) {
@@ -16,18 +17,14 @@ export default class KategoriIuranController {
       return response.status(403).json({ success: false, message: 'Akses ditolak' })
     }
 
-    const { nama, deskripsi, jumlah_default, periode } = request.only([
+    const { nama, deskripsi, jumlah_default, periode } = await storeKategoriIuranValidator.validate(request.only([
       'nama', 'deskripsi', 'jumlah_default', 'periode',
-    ])
-
-    if (!nama) {
-      return response.status(400).json({ success: false, message: 'Nama kategori wajib diisi' })
-    }
+    ]))
 
     const kategori = await KategoriIuran.create({
       nama,
       deskripsi: deskripsi || null,
-      jumlah_default: Number(jumlah_default) || 0,
+      jumlah_default: jumlah_default !== undefined ? Number(jumlah_default) : 0,
       periode: periode || 'insidental',
       aktif: true,
     })
@@ -41,9 +38,9 @@ export default class KategoriIuranController {
     }
 
     const kategori = await KategoriIuran.findOrFail(params.id)
-    const { nama, deskripsi, jumlah_default, periode, aktif } = request.only([
+    const { nama, deskripsi, jumlah_default, periode, aktif } = await updateKategoriIuranValidator.validate(request.only([
       'nama', 'deskripsi', 'jumlah_default', 'periode', 'aktif',
-    ])
+    ]))
 
     if (nama !== undefined) kategori.nama = nama
     if (deskripsi !== undefined) kategori.deskripsi = deskripsi

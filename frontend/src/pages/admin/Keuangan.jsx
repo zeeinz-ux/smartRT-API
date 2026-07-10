@@ -18,19 +18,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell, Sector,
 } from "recharts";
+import { rupiah } from "../../utils/rupiah.js";
+import { formatDate } from "../../utils/formatDate.js";
 import "../../assets/style/css/Keuangan.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-const BULAN = [
-  { value: 0, label: "Semua Bulan" },
-  { value: 1, label: "Januari" }, { value: 2, label: "Februari" },
-  { value: 3, label: "Maret" }, { value: 4, label: "April" },
-  { value: 5, label: "Mei" }, { value: 6, label: "Juni" },
-  { value: 7, label: "Juli" }, { value: 8, label: "Agustus" },
-  { value: 9, label: "September" }, { value: 10, label: "Oktober" },
-  { value: 11, label: "November" }, { value: 12, label: "Desember" },
-];
+import API_BASE_URL from "../../utils/api.js";
+import { BULAN, BULAN_LABEL } from "../../utils/bulan.js";
 
 const KATEGORI_PENGELUARAN = [
   "Operasional",
@@ -42,18 +34,6 @@ const KATEGORI_PENGELUARAN = [
 ];
 
 const CHART_COLORS = ["#22c55e", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
-
-const BULAN_LABEL = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-
-function rupiah(n) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
-}
-
-function formatDate(d) {
-  if (!d) return "-";
-  const date = new Date(d);
-  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
 
 export default function Keuangan() {
   const now = new Date();

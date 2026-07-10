@@ -1,16 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Phone, MapPin, Clock, CheckCircle2, Loader, ExternalLink, AlertTriangle } from "lucide-react";
+import { formatDateTime } from "../../utils/formatDate.js";
 import "../../assets/style/css/Darurat.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333";
-
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
+import API_BASE_URL from "../../utils/api.js";
 
 function timeAgo(d) {
   const diff = Date.now() - new Date(d).getTime();
@@ -19,7 +11,7 @@ function timeAgo(d) {
   if (mins < 60) return `${mins} menit lalu`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours} jam lalu`;
-  return formatDate(d);
+  return formatDateTime(d);
 }
 
 export default function AdminDarurat() {
